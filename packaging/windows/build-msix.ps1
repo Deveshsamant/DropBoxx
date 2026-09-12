@@ -48,10 +48,14 @@ function Tile($w, $h, $file) {
   $g.FillPolygon([System.Drawing.Brushes]::White, $pts)
   $bmp.Save($file, [System.Drawing.Imaging.ImageFormat]::Png); $g.Dispose(); $bmp.Dispose()
 }
-Tile 50 50 "$stage\Assets\StoreLogo.png"
-Tile 150 150 "$stage\Assets\Square150x150Logo.png"
-Tile 44 44 "$stage\Assets\Square44x44Logo.png"
-Tile 310 150 "$stage\Assets\Wide310x150Logo.png"
+if (Test-Path "$PSScriptRootssets\StoreLogo.png") {
+  Copy-Item "$PSScriptRootssets\*.png" "$stage\Assets\"
+} else {
+  Tile 50 50 "$stage\Assets\StoreLogo.png"
+  Tile 150 150 "$stage\Assets\Square150x150Logo.png"
+  Tile 44 44 "$stage\Assets\Square44x44Logo.png"
+  Tile 310 150 "$stage\Assets\Wide310x150Logo.png"
+}
 
 & $makeappx pack /d $stage /p $out /o
 if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }

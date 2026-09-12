@@ -4,7 +4,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.res.loadImageBitmap
+import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Notification
@@ -27,7 +29,6 @@ import com.dropboxx.model.OutgoingItem
 import com.dropboxx.platform.DesktopPlatformServices
 import com.dropboxx.platform.expandFiles
 import com.dropboxx.ui.ShareInbox
-import com.dropboxx.ui.theme.DropBoxxLogo
 import org.koin.core.context.startKoin
 import java.io.File
 import java.net.InetAddress
@@ -57,7 +58,7 @@ fun main(args: Array<String>) {
     application {
         val trayState = rememberTrayState()
         var visible by remember { mutableStateOf(true) }
-        val logo = rememberVectorPainter(DropBoxxLogo)
+        val logo = remember { BitmapPainter(useResource("icons/logo.png", ::loadImageBitmap)) }
 
         platform.notificationSink = { title, body -> trayState.sendNotification(Notification(title, body, Notification.Type.Info)) }
 

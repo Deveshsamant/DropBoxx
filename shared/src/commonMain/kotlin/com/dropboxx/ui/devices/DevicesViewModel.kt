@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dropboxx.core.AppInfo
 import com.dropboxx.domain.AppSettings
+import com.dropboxx.domain.BoxAccess
 import com.dropboxx.domain.DeviceIdentity
 import com.dropboxx.domain.DiscoveryService
 import com.dropboxx.domain.HotspotState
@@ -56,7 +57,7 @@ class DevicesViewModel(
 
     fun forget(peer: Peer) = discovery.forget(peer.id)
     fun toggleServer() { if (server.state.value is ServerState.Running) server.stop() else server.start() }
-    fun setQuickSave(enabled: Boolean) = settings.update { copy(quickSave = enabled) }
+    fun setBoxAccess(access: BoxAccess) = settings.update { copy(boxAccess = access) }
     fun toggleHotspot() {
         if (hotspot.value.active || hotspot.value.starting) platform.hotspot.stop()
         else viewModelScope.launch { platform.hotspot.start() }

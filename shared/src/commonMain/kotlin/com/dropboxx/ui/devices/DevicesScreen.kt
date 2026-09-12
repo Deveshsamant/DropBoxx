@@ -22,6 +22,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dropboxx.domain.BoxAccess
 import com.dropboxx.domain.ServerState
 import com.dropboxx.model.Peer
 import com.dropboxx.ui.components.DeviceAvatar
@@ -82,11 +84,13 @@ fun DevicesScreen(wide: Boolean, onOpenPeer: (Peer) -> Unit, onMessage: (String)
                     }
                     Switch(checked = server is ServerState.Running || server == ServerState.Starting, onCheckedChange = { viewModel.toggleServer() })
                 }
-                Row(Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(AppIcons.Bolt, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Quick Save - accept from trusted devices automatically", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                    Switch(settings.quickSave, viewModel::setQuickSave)
+                Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp)) {
+                    Text("Who can open my box", style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = settings.boxAccess == BoxAccess.ASK, onClick = { viewModel.setBoxAccess(BoxAccess.ASK) }, label = { Text("Ask me") })
+                        FilterChip(selected = settings.boxAccess == BoxAccess.TRUSTED_ONLY, onClick = { viewModel.setBoxAccess(BoxAccess.TRUSTED_ONLY) }, label = { Text("Trusted only") })
+                        FilterChip(selected = settings.boxAccess == BoxAccess.EVERYONE, onClick = { viewModel.setBoxAccess(BoxAccess.EVERYONE) }, label = { Text("Anyone nearby") })
+                    }
                 }
             }
         }
@@ -122,7 +126,7 @@ private fun PeerCard(peer: Peer, onOpen: () -> Unit) {
                     Text(peer.info.alias, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (peer.trusted) Icon(AppIcons.Shield, contentDescription = "Trusted", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
                 }
-                Text("${peer.address} - tap to open their box", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${peer.address} - tap to see what they dropped", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }

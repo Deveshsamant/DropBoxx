@@ -1,9 +1,9 @@
 # DropBoxx
 
-Drop anything - files, photos, videos, documents, text, links - into your box. Every device on the
-same Wi-Fi (or on a phone hotspot when there is no router) can see your box and pull from it, and
-you can push items straight to a device. No accounts, no cloud, no internet: everything moves
-device-to-device over TLS.
+Drop anything - files, photos, videos, documents, text, links - into your box, any time, even with
+no other device around. Whenever another device running the app is on the same Wi-Fi (or on your
+phone's hotspot when there is no router) it can open your box, pick the items it wants and
+download them. No accounts, no cloud, no internet: everything moves device-to-device over TLS.
 
 > **Rename before publishing.** "DropBoxx" collides with the Dropbox(R) trademark; both stores
 > screen for this. The name lives in `AppInfo.NAME`, `applicationId`, `strings.xml` and the MSIX manifest.
@@ -23,10 +23,10 @@ macOS and Linux build from the same desktop module (`packageDmg`, `packageDeb`).
   clipboard paste, or `Open with`. Items stay until you remove them. Tap a file to open it: images in
   the built-in viewer, everything else (PDF, video, docs) in the system's app.
 * **Devices** - zero-config discovery (multicast + unicast registration + subnet scan + manual IP).
-  Tap a device to open its box, select items, **Fetch**. Or **Send** selected box items to it.
-* **Approval & trust** - the owner sees "X wants to open your box" / "X wants to send N items";
-  *Always allow / Always accept* pairs the devices (per-device secret tokens). Optional PIN.
-  Quick Save auto-accepts from trusted devices.
+  Tap a device to see what it dropped, select items, **Fetch**.
+* **Approval & trust** - the owner chooses who can open the box: *Ask me* (a prompt with
+  Allow once / Always allow / Deny), *Trusted only*, or *Anyone nearby*. *Always allow* pairs the
+  devices with a per-device secret token. Optional PIN.
 * **Transfers** - parallel streams, live speed/ETA, resume after a dropped Wi-Fi link, history.
 * **Hotspot mode** (Android) - one tap local-only hotspot when no router is around.
 * Windows: system tray, minimize-to-tray, launch at login, single instance.

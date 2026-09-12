@@ -68,7 +68,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = koinViewModel()) {
         }
 
         item { SectionHeader("Receiving") }
-        item { SwitchRow("Quick Save", "Accept automatically from trusted devices", s.quickSave, viewModel::setQuickSave) }
         item {
             OutlinedTextField(pin, { pin = it.filter { c -> c.isDigit() }.take(8) }, label = { Text("Require PIN (empty = off)") }, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
