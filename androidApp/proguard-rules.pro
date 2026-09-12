@@ -1,0 +1,23 @@
+# Keep rules that will be needed once isMinifyEnabled = true.
+-dontwarn io.netty.**
+-dontwarn org.slf4j.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+-dontwarn reactor.blockhound.**
+-dontwarn com.aayushatharva.brotli4j.**
+-dontwarn com.github.luben.zstd.**
+-dontwarn com.google.protobuf.**
+-dontwarn com.jcraft.jzlib.**
+-dontwarn com.ning.compress.**
+-dontwarn lzma.sdk.**
+-dontwarn net.jpountz.**
+-dontwarn org.apache.logging.log4j.**
+-dontwarn org.eclipse.jetty.**
+-dontwarn org.jboss.marshalling.**
+-keep class io.netty.** { *; }
+-keep class io.ktor.** { *; }
+-keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
+-keep,includedescriptorclasses class com.dropboxx.**$$serializer { *; }
+-keepclassmembers class com.dropboxx.** { *** Companion; }
+-keepclasseswithmembers class com.dropboxx.** { kotlinx.serialization.KSerializer serializer(...); }

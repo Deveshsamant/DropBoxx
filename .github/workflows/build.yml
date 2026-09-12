@@ -1,0 +1,62 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  test-and-android:
+    name: Tests + Android bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Engine + protocol integration tests
+        run: ./gradlew :desktopApp:test --stacktrace
+      - name: Android debug APK
+        run: ./gradlew :androidApp:assembleDebug --stacktrace
+      - name: Android release bundle (only when signing secrets exist)
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/release.keystore
+          printf "storeFile=/tmp/release.keystore\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" > androidApp/keystore.properties
+          ./gradlew :androidApp:bundleRelease --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: |
+            androidApp/build/outputs/apk/debug/*.apk
+            androidApp/build/outputs/bundle/release/*.aab
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: test-reports, path: desktopApp/build/reports/tests }
+
+  windows:
+    name: Windows installer + MSIX
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build app-image and MSI
+        run: ./gradlew :desktopApp:createReleaseDistributable :desktopApp:packageReleaseMsi --stacktrace
+      - name: Build MSIX (unsigned, for Partner Center)
+        shell: pwsh
+        run: powershell -File packaging/windows/build-msix.ps1 -Version "1.0.0.0" -IdentityName "${{ vars.MSIX_IDENTITY_NAME || 'DropBoxx.Dev' }}" -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=DropBoxx Dev' }}" -PublisherDisplayName "${{ vars.MSIX_PUBLISHER_DISPLAY || 'DropBoxx' }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            desktopApp/build/compose/binaries/main-release/msi/*.msi
+            desktopApp/build/msix/*.msix
