@@ -35,7 +35,7 @@ class BoxIntegrationTest {
     private lateinit var bobPeer: Peer
 
     @BeforeTest
-    fun setUp() = runBlocking {
+    fun setUp() = runBlocking<Unit> {
         root = Files.createTempDirectory("dropboxx-box").toFile()
         alice = TestDevice("Alice", root); bob = TestDevice("Bob", root)
         alice.start()
@@ -50,7 +50,7 @@ class BoxIntegrationTest {
     private suspend fun awaitSession(d: TestDevice, p: (TransferSession) -> Boolean) = withTimeout(60_000) { d.engine.sessions.first { l -> l.any(p) }.first(p) }
 
     @Test
-    fun boxSurvivesRestartAndPeerCanFetchAfterApproval() = runBlocking {
+    fun boxSurvivesRestartAndPeerCanFetchAfterApproval() = runBlocking<Unit> {
         val video = randomFile("clip.bin", 4 * 1024 * 1024)
         val skipped = bob.box.add(listOf(OutgoingItem.File("a", DesktopFile(video)), OutgoingItem.Text("b", "note in the box"), OutgoingItem.Url("c", "https://example.org")))
         assertTrue(skipped.isEmpty())
@@ -79,7 +79,7 @@ class BoxIntegrationTest {
     }
 
     @Test
-    fun deniedAndTrustedOnlyPolicies() = runBlocking {
+    fun deniedAndTrustedOnlyPolicies() = runBlocking<Unit> {
         bob.box.add(listOf(OutgoingItem.Text("t", "secret")))
         launch {
             val req = withTimeout(20_000) { bob.engine.accessRequest.filterNotNull().first() }
@@ -96,7 +96,7 @@ class BoxIntegrationTest {
     }
 
     @Test
-    fun downloadTokenIsRequired() = runBlocking {
+    fun downloadTokenIsRequired() = runBlocking<Unit> {
         bob.settings.update { copy(boxAccess = BoxAccess.EVERYONE) }
         bob.box.add(listOf(OutgoingItem.File("f", DesktopFile(randomFile("doc.bin", 10_000)))))
         val ready = assertIs<BrowseOutcome.Ok>(alice.engine.browse(bobPeer))

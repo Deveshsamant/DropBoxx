@@ -38,7 +38,7 @@ class TransferIntegrationTest {
     private lateinit var bobAsSeenByAlice: Peer
 
     @BeforeTest
-    fun setUp() = runBlocking {
+    fun setUp() = runBlocking<Unit> {
         root = Files.createTempDirectory("dropboxx-test").toFile()
         alice = TestDevice("Alice", root)
         bob = TestDevice("Bob", root)
@@ -68,7 +68,7 @@ class TransferIntegrationTest {
     }
 
     @Test
-    fun filesTextAndLinkArriveIntactAfterAcceptAndTrust() = runBlocking {
+    fun filesTextAndLinkArriveIntactAfterAcceptAndTrust() = runBlocking<Unit> {
         val big = randomFile("movie.bin", 6 * 1024 * 1024)
         val small = randomFile("note.txt", 1234)
         val items = listOf(
@@ -112,7 +112,7 @@ class TransferIntegrationTest {
     }
 
     @Test
-    fun trustedSenderIsAutoAcceptedWithoutDialog() = runBlocking {
+    fun trustedSenderIsAutoAcceptedWithoutDialog() = runBlocking<Unit> {
         acceptOnce(trust = true)
         alice.engine.send(bobAsSeenByAlice, listOf(OutgoingItem.Text("t", "first")))
         awaitSession(alice) { it.status.isTerminal }
@@ -127,7 +127,7 @@ class TransferIntegrationTest {
     }
 
     @Test
-    fun declinedTransferReportsDeclinedToSender() = runBlocking {
+    fun declinedTransferReportsDeclinedToSender() = runBlocking<Unit> {
         launch {
             val req = withTimeout(20_000) { bob.engine.incomingRequest.filterNotNull().first() }
             bob.engine.respond(req.sessionId, IncomingDecision(accept = false))
@@ -141,7 +141,7 @@ class TransferIntegrationTest {
     }
 
     @Test
-    fun receiverPinIsEnforced() = runBlocking {
+    fun receiverPinIsEnforced() = runBlocking<Unit> {
         bob.settings.update { copy(pin = "4321") }
         assertEquals(SendOutcome.PinRequired, alice.engine.send(bobAsSeenByAlice, listOf(OutgoingItem.Text("t", "x"))))
         assertEquals(SendOutcome.PinRequired, alice.engine.send(bobAsSeenByAlice, listOf(OutgoingItem.Text("t", "x")), pin = "0000"))
@@ -150,7 +150,7 @@ class TransferIntegrationTest {
     }
 
     @Test
-    fun senderCancelAbortsReceiverAndCleansUp() = runBlocking {
+    fun senderCancelAbortsReceiverAndCleansUp() = runBlocking<Unit> {
         acceptOnce(trust = false)
         val huge = randomFile("huge.bin", 40 * 1024 * 1024)
         assertEquals(SendOutcome.Started, alice.engine.send(bobAsSeenByAlice, listOf(OutgoingItem.File("f", DesktopFile(huge)))))
