@@ -76,7 +76,7 @@ class TestDevice(val name: String, root: File) {
     val clients = PeerClients()
     val trust = TrustStoreImpl(dir.absolutePath)
     val history = HistoryStoreImpl(dir.absolutePath)
-    val discovery = MulticastDiscovery(identity, clients, trust, settings, platform, scope)
+    val discovery = MulticastDiscovery(identity, clients, trust, settings, platform, scope, multicastEnabled = false)
     val registry = SessionRegistry(history, platform, scope)
     val receive = ReceiveController(registry, trust, settings, platform, scope)
     val send = SendController(registry, clients, trust, identity, scope)

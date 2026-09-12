@@ -16,10 +16,12 @@ object NetworkUtils {
             if (!runCatching { iface.isUp && !iface.isLoopback }.getOrDefault(false)) continue
             val name = iface.name.lowercase()
             // Skip virtual adapters that never carry peers (VPN tunnels, VirtualBox, Docker...).
-            if (name.startsWith("docker") || name.startsWith("veth") || name.startsWith("vbox") || name.startsWith("vmnet") || name.startsWith("tun")) continue
+            // Also skip mobile-data (rmnet/ccmni), 464XLAT and VPN interfaces: peers are never reachable there.
+            if (listOf("docker", "veth", "vbox", "vmnet", "tun", "rmnet", "ccmni", "clat", "dummy", "utun", "ppp").any { name.startsWith(it) }) continue
             for (ia in iface.interfaceAddresses) {
                 val addr = ia.address
-                if (addr is Inet4Address && !addr.isLoopbackAddress && !addr.isLinkLocalAddress) {
+                // 192.0.0.0/24 is carrier-grade NAT plumbing (RFC 7335), not a LAN.
+                if (addr is Inet4Address && !addr.isLoopbackAddress && !addr.isLinkLocalAddress && !(addr.hostAddress ?: "").startsWith("192.0.0.")) {
                     val host = addr.hostAddress ?: continue
                     result += LocalAddress(host, ia.networkPrefixLength, iface.name)
                 }

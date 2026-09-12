@@ -56,6 +56,8 @@ class MulticastDiscovery(
     private val settings: AppSettings,
     private val platform: PlatformServices,
     appScope: CoroutineScope,
+    /** Tests run several engines on one host and must not advertise them to the real LAN. */
+    private val multicastEnabled: Boolean = true,
 ) : DiscoveryService {
 
     private val log = Logger.withTag("Discovery")
@@ -78,7 +80,7 @@ class MulticastDiscovery(
 
     @Synchronized
     override fun start() {
-        if (scope != null) return
+        if (scope != null || !multicastEnabled) return
         val s = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope = s
         platform.setMulticastEnabled(true)

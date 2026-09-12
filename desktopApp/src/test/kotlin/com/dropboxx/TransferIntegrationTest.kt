@@ -55,7 +55,7 @@ class TransferIntegrationTest {
     }
 
     private fun randomFile(name: String, size: Int): File =
-        File(root, name).also { it.writeBytes(Random.nextBytes(size)) }
+        File(root, name).also { it.parentFile?.mkdirs(); it.writeBytes(Random.nextBytes(size)) }
 
     private fun sha256(f: File) = MessageDigest.getInstance("SHA-256").digest(f.readBytes()).joinToString("") { "%02x".format(it) }
 
@@ -109,6 +109,20 @@ class TransferIntegrationTest {
         assertNotNull(alice.trust.outgoingToken(bob.identity.info.value.id))
         assertEquals(1, bob.history.entries.value.size)
         assertTrue(bob.notifications.any { it.startsWith("Received") }, bob.notifications.toString())
+    }
+
+    @Test
+    fun sameNameFilesInOneSessionStayIntact() = runBlocking<Unit> {
+        acceptOnce(trust = false)
+        val a = randomFile("a/photo.png", 900_000)
+        val b = randomFile("b/photo.png", 700_000)
+        val items = listOf(OutgoingItem.File("f1", DesktopFile(a)), OutgoingItem.File("f2", DesktopFile(b)))
+        assertEquals(SendOutcome.Started, alice.engine.send(bobAsSeenByAlice, items))
+        val done = awaitSession(alice) { it.status.isTerminal }
+        assertEquals(SessionStatus.COMPLETED, done.status, done.error)
+        val received = bob.receivedDir.listFiles().orEmpty().filter { it.name.startsWith("photo") }.sortedBy { it.name }
+        assertEquals(listOf("photo (1).png", "photo.png"), received.map { it.name })
+        assertEquals(setOf(sha256(a), sha256(b)), received.map { sha256(it) }.toSet(), "each file must be intact, not interleaved")
     }
 
     @Test
