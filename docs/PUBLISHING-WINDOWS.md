@@ -2,7 +2,7 @@
 
 ## 1. Reserve the app in Partner Center
 1. partner.microsoft.com/dashboard -> Apps and games -> **New product -> MSIX or PWA app**.
-2. Reserve the (renamed, non-trademarked) name. Partner Center then shows, under
+2. Reserve the name **DropNest**. Partner Center then shows, under
    *Product management -> Product identity*: **Package/Identity/Name**,
    **Package/Identity/Publisher** (`CN=...`) and **Package/Properties/PublisherDisplayName**.
    These three values must be copied into `packaging/windows/AppxManifest.xml`.
@@ -15,7 +15,7 @@ Installer -> Individual components -> *Windows 11 SDK*, or `winget install Micro
 ./gradlew :desktopApp:createReleaseDistributable      # app-image with bundled JRE
 powershell -File packaging/windows/build-msix.ps1 -Version 1.0.0.0 -IdentityName "<from Partner Center>" -Publisher "<CN=... from Partner Center>" -PublisherDisplayName "<name>"
 ```
-Output: `desktopApp/build/msix/DropBoxx.msix`. For local testing the script can also create and
+Output: `desktopApp/build/msix/DropNest.msix`. For local testing the script can also create and
 trust a self-signed certificate (`-SelfSign`); Store submissions must be **unsigned** - the Store
 signs them with Microsoft's certificate.
 

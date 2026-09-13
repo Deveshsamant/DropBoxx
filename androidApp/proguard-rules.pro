@@ -18,6 +18,6 @@
 -keep class io.netty.** { *; }
 -keep class io.ktor.** { *; }
 -keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
--keep,includedescriptorclasses class com.dropboxx.**$$serializer { *; }
--keepclassmembers class com.dropboxx.** { *** Companion; }
--keepclasseswithmembers class com.dropboxx.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class com.dropnest.**$$serializer { *; }
+-keepclassmembers class com.dropnest.** { *** Companion; }
+-keepclasseswithmembers class com.dropnest.** { kotlinx.serialization.KSerializer serializer(...); }

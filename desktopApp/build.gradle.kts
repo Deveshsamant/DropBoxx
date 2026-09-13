@@ -26,7 +26,7 @@ tasks.test {
 
 compose.desktop {
     application {
-        mainClass = "com.dropboxx.desktop.MainKt"
+        mainClass = "com.dropnest.desktop.MainKt"
 
         // Latency-oriented JVM flags: small heap, quick warm-up.
         jvmArgs += listOf(
@@ -42,11 +42,11 @@ compose.desktop {
             // MSI for direct download; the Microsoft Store MSIX is produced from
             // the app-image by packaging/windows/build-msix.ps1.
             targetFormats(TargetFormat.Msi, TargetFormat.AppImage)
-            packageName = "DropBoxx"
+            packageName = "DropNest"
             packageVersion = "1.0.0"
             description = "Drop anything. Share it with every device on your Wi-Fi."
-            vendor = "DropBoxx"
-            copyright = "(c) 2026 DropBoxx"
+            vendor = "DropNest"
+            copyright = "(c) 2026 DropNest"
 
             // jlink modules the runtime needs but that static analysis misses:
             //  - jdk.crypto.ec: TLS ECDHE ciphers (handshakes fail without it)
@@ -55,12 +55,12 @@ compose.desktop {
             modules("jdk.crypto.ec", "jdk.unsupported", "java.naming", "java.management", "java.sql", "java.net.http")
 
             windows {
-                menuGroup = "DropBoxx"
+                menuGroup = "DropNest"
                 shortcut = true
                 dirChooser = true
                 perUserInstall = true
                 upgradeUuid = "7e6c8a2e-4c39-4d2e-9d55-9a3f2b1e6c11"
-                iconFile.set(project.file("src/main/resources/icons/dropboxx.ico"))
+                iconFile.set(project.file("src/main/resources/icons/dropnest.ico"))
             }
         }
 

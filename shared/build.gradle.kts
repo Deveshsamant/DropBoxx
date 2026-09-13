@@ -13,7 +13,7 @@ kotlin {
     jvm()
 
     android {
-        namespace = "com.dropboxx.shared"
+        namespace = "com.dropnest.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 

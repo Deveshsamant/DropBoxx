@@ -25,7 +25,7 @@ val keystoreProps = Properties().apply {
 }
 
 android {
-    namespace = "com.dropboxx.android"
+    namespace = "com.dropnest.android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     signingConfigs {
@@ -40,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.dropboxx.app"
+        applicationId = "com.dropnest.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

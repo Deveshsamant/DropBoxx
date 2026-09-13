@@ -6,10 +6,7 @@ testers opted in for 14 continuous days** before they can apply for production a
 
 ## 0. One-time preparation (do this today)
 
-1. **Rename the app before you upload.** "DropBoxx" collides with the Dropbox trademark and Play
-   rejects or later removes such listings. Pick a new name, then change:
-   `applicationId` in `androidApp/build.gradle.kts` (this is permanent once published!),
-   `app_name` in `androidApp/src/main/res/values/strings.xml`, `AppInfo.NAME`, and the MSIX manifest.
+1. **Name:** DropNest, `applicationId` `com.dropnest.app` (permanent once uploaded - do not change after the first upload).
 2. **Create the upload keystore** (keep it forever; losing it means you can never update the app):
    ```bash
    keytool -genkeypair -v -keystore release.keystore -alias upload -keyalg RSA -keysize 4096 -validity 10000

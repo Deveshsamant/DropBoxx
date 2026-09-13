@@ -53,7 +53,7 @@ jobs:
         run: ./gradlew :desktopApp:createReleaseDistributable :desktopApp:packageReleaseMsi --stacktrace
       - name: Build MSIX (unsigned, for Partner Center)
         shell: pwsh
-        run: powershell -File packaging/windows/build-msix.ps1 -Version "1.0.0.0" -IdentityName "${{ vars.MSIX_IDENTITY_NAME || 'DropBoxx.Dev' }}" -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=DropBoxx Dev' }}" -PublisherDisplayName "${{ vars.MSIX_PUBLISHER_DISPLAY || 'DropBoxx' }}"
+        run: powershell -File packaging/windows/build-msix.ps1 -Version "1.0.0.0" -IdentityName "${{ vars.MSIX_IDENTITY_NAME || 'DropNest.Dev' }}" -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=DropNest Dev' }}" -PublisherDisplayName "${{ vars.MSIX_PUBLISHER_DISPLAY || 'DropNest' }}"
       - uses: actions/upload-artifact@v4
         with:
           name: windows

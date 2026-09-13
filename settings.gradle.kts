@@ -1,4 +1,4 @@
-rootProject.name = "DropBoxx"
+rootProject.name = "DropNest"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

@@ -3,20 +3,20 @@
   Wraps the Compose Desktop app-image into an MSIX package for the Microsoft Store.
 .EXAMPLE
   ./gradlew :desktopApp:createReleaseDistributable
-  powershell -File packaging/windows/build-msix.ps1 -Version 1.0.0.0 -IdentityName 12345Publisher.DropBoxx -Publisher "CN=ABCDEF12-3456-..." -PublisherDisplayName "Your Name"
+  powershell -File packaging/windows/build-msix.ps1 -Version 1.0.0.0 -IdentityName 12345Publisher.DropNest -Publisher "CN=ABCDEF12-3456-..." -PublisherDisplayName "Your Name"
   # add -SelfSign to install locally for testing (creates + trusts a dev certificate)
 #>
 param(
   [string]$Version = "1.0.0.0",
-  [string]$IdentityName = "DropBoxx.Dev",
-  [string]$Publisher = "CN=DropBoxx Dev",
-  [string]$PublisherDisplayName = "DropBoxx",
+  [string]$IdentityName = "DropNest.Dev",
+  [string]$Publisher = "CN=DropNest Dev",
+  [string]$PublisherDisplayName = "DropNest",
   [switch]$SelfSign
 )
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path "$PSScriptRoot\..\.."
-$appImage = Get-ChildItem "$root\desktopApp\build\compose\binaries\main-release\app\DropBoxx" -ErrorAction SilentlyContinue
-if (-not $appImage) { $appImage = Get-ChildItem "$root\desktopApp\build\compose\binaries\main\app\DropBoxx" -ErrorAction SilentlyContinue }
+$appImage = Get-ChildItem "$root\desktopApp\build\compose\binaries\main-release\app\DropNest" -ErrorAction SilentlyContinue
+if (-not $appImage) { $appImage = Get-ChildItem "$root\desktopApp\build\compose\binaries\main\app\DropNest" -ErrorAction SilentlyContinue }
 if (-not $appImage) { throw "Run ./gradlew :desktopApp:createReleaseDistributable first" }
 
 $sdkBin = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.*\x64" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
@@ -25,10 +25,10 @@ $makeappx = Join-Path $sdkBin.FullName "makeappx.exe"
 $signtool = Join-Path $sdkBin.FullName "signtool.exe"
 
 $stage = "$root\desktopApp\build\msix\stage"
-$out = "$root\desktopApp\build\msix\DropBoxx.msix"
+$out = "$root\desktopApp\build\msix\DropNest.msix"
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Force "$stage\Assets" | Out-Null
-Copy-Item $appImage.FullName "$stage\DropBoxx" -Recurse
+Copy-Item $appImage.FullName "$stage\DropNest" -Recurse
 
 # Manifest with the identity Partner Center assigned.
 $manifest = Get-Content "$PSScriptRoot\AppxManifest.xml" -Raw
@@ -63,7 +63,7 @@ if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }
 if ($SelfSign) {
   $cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -eq $Publisher } | Select-Object -First 1
   if (-not $cert) {
-    $cert = New-SelfSignedCertificate -Type Custom -Subject $Publisher -KeyUsage DigitalSignature -FriendlyName "DropBoxx dev" -CertStoreLocation Cert:\CurrentUser\My -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+    $cert = New-SelfSignedCertificate -Type Custom -Subject $Publisher -KeyUsage DigitalSignature -FriendlyName "DropNest dev" -CertStoreLocation Cert:\CurrentUser\My -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
     Export-Certificate -Cert $cert -FilePath "$root\desktopApp\build\msix\dev.cer" | Out-Null
     Write-Host "Trust the dev certificate once (admin PowerShell): Import-Certificate -FilePath desktopApp\build\msix\dev.cer -CertStoreLocation Cert:\LocalMachine\Root"
   }

@@ -1,12 +1,12 @@
-# DropBoxx
+# DropNest
+
+> The bundled `logo.png` still carries the old wordmark - replace it with a DropNest logo
+> (same 1254x1254 PNG) and re-run the icon generation in `packaging/gen-icons.py`.
 
 Drop anything - files, photos, videos, documents, text, links - into your box, any time, even with
 no other device around. Whenever another device running the app is on the same Wi-Fi (or on your
 phone's hotspot when there is no router) it can open your box, pick the items it wants and
 download them. No accounts, no cloud, no internet: everything moves device-to-device over TLS.
-
-> **Rename before publishing.** "DropBoxx" collides with the Dropbox(R) trademark; both stores
-> screen for this. The name lives in `AppInfo.NAME`, `applicationId`, `strings.xml` and the MSIX manifest.
 
 ## Platforms
 
@@ -31,7 +31,7 @@ macOS and Linux build from the same desktop module (`packageDmg`, `packageDeb`).
 * **Hotspot mode** (Android) - one tap local-only hotspot when no router is around.
 * Windows: system tray, minimize-to-tray, launch at login, single instance.
   Android: foreground service keeps receiving in the background; files land in Pictures/Movies/
-  Music/Download -> `DropBoxx` via MediaStore (no storage permission on Android 10+).
+  Music/Download -> `DropNest` via MediaStore (no storage permission on Android 10+).
 
 ## Build
 

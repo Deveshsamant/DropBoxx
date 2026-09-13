@@ -22,7 +22,7 @@ Test engines run with multicast disabled so they never appear on the real LAN.
 1. Phone + PC on the same Wi-Fi: both appear in Devices within 5 s of launch.
 2. Drop a photo, a 1 GB video, a PDF, a text note and a link into the phone box; open it from the
    PC, fetch all; verify sizes, open each from Transfers (image viewer, PDF app, browser).
-3. Reverse direction (PC box -> phone); files land in Pictures/Movies/Download -> DropBoxx.
+3. Reverse direction (PC box -> phone); files land in Pictures/Movies/Download -> DropNest.
 4. Turn Wi-Fi off mid-fetch, back on: fetch resumes and completes (Transfers shows retry).
 5. Hotspot mode on the phone, PC joins: PC finds the phone within 15 s.
 6. Deny / Always allow / PIN flows; revoke a trusted device in Settings and confirm the prompt returns.

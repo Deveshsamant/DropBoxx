@@ -1,4 +1,4 @@
-# DropBoxx protocol v1
+# DropNest protocol v1
 
 JSON over HTTPS between two devices on the same network. Every device runs its own server;
 there is no central component and no internet dependency.
