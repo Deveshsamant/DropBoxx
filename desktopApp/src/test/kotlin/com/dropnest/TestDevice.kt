@@ -88,7 +88,8 @@ class TestDevice(val name: String, root: File) {
 
     suspend fun start(): Int {
         server.start()
-        val running = withTimeout(20_000) { server.state.first { it is ServerState.Running } as ServerState.Running }
+        // Cold JVM + RSA keygen + Netty boot can take a while on a loaded laptop.
+        val running = withTimeout(90_000) { server.state.first { it is ServerState.Running } as ServerState.Running }
         return running.port
     }
 

@@ -216,9 +216,9 @@ class MulticastDiscovery(
         // A single host the user typed deserves patience: cold TLS stacks and sleepy phones can miss the first probe.
         var found: DeviceInfo? = null
         repeat(3) { attempt ->
-            found = withTimeoutOrNull(4_000) {
+            found = withTimeoutOrNull(15_000) {
                 runCatching {
-                    val r = clients.probe.get("https://$address:$port${Api.INFO}")
+                    val r = clients.patientProbe.get("https://$address:$port${Api.INFO}")
                     if (r.status.isSuccess()) r.body<DeviceInfo>() else null
                 }.getOrNull()
             }

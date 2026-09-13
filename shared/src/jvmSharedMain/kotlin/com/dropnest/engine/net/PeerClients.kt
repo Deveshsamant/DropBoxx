@@ -29,8 +29,11 @@ class PeerClients : AutoCloseable {
 
     private val pinned = ConcurrentHashMap<String, HttpClient>()
 
-    /** Accepts any certificate. Used only for the `/info` probe of not-yet-known hosts. */
+    /** Accepts any certificate. Used only for the `/info` probe of not-yet-known hosts during a subnet scan. */
     val probe: HttpClient by lazy { build(trustManager = TrustAll, connectMillis = 700, requestMillis = 2_500) }
+
+    /** Same trust policy with patient timeouts, for a single host the user typed or a cold first contact. */
+    val patientProbe: HttpClient by lazy { build(trustManager = TrustAll, connectMillis = 4_000, requestMillis = 12_000) }
 
     fun forFingerprint(fingerprint: String): HttpClient =
         pinned.getOrPut(fingerprint.lowercase()) { build(PinnedTrust(fingerprint.lowercase()), connectMillis = 5_000, requestMillis = null) }
@@ -64,6 +67,8 @@ class PeerClients : AutoCloseable {
     }
 
     override fun close() {
+        runCatching { probe.close() }
+        runCatching { patientProbe.close() }
         pinned.values.forEach { runCatching { it.close() } }
         pinned.clear()
     }
