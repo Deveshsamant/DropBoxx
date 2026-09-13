@@ -13,7 +13,7 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val uiModule: Module = module {
-    single { ShareInbox() }
+    single { ShareInbox(get(), get(), get()) }
     viewModelOf(::AppViewModel)
     viewModelOf(::BoxViewModel)
     viewModelOf(::DevicesViewModel)

@@ -38,16 +38,14 @@ class BoxViewModel(
     private val importing = MutableStateFlow(false)
     private val dropHover = MutableStateFlow(false)
 
-    val state: StateFlow<BoxUiState> = combine(box.items, importing, dropHover) { items, imp, hover ->
-        BoxUiState(items.sortedByDescending { it.addedAt }, imp, hover)
+    val state: StateFlow<BoxUiState> = combine(box.items, importing, inbox.importing, dropHover) { items, imp, shared, hover ->
+        BoxUiState(items.sortedByDescending { it.addedAt }, imp || shared > 0, hover)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BoxUiState())
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val messages: SharedFlow<String> get() = _messages
 
-    init {
-        viewModelScope.launch { inbox.pending.collect { if (it.isNotEmpty()) add(inbox.drain()) } }
-    }
+
 
     fun addFiles(files: List<PlatformFile>) = add(files.map { OutgoingItem.File(randomId(8), it) })
 

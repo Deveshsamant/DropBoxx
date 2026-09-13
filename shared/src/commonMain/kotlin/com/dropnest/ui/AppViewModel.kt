@@ -36,6 +36,7 @@ class AppViewModel(
     private val platform: PlatformServices,
     identity: DeviceIdentity,
     server: LocalServer,
+    inbox: ShareInbox,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settings.state.map { it.themeMode }
@@ -52,6 +53,7 @@ class AppViewModel(
     val autoCopyText: Boolean get() = settings.current.autoCopyText
 
     init {
+        viewModelScope.launch { inbox.results.collect { _events.tryEmit(AppEvent.Toast(it)) } }
         viewModelScope.launch {
             engine.receivedContent.collect { content ->
                 if (content.kind == ItemKind.URL && settings.current.autoOpenLinks) platform.openUrl(content.content)

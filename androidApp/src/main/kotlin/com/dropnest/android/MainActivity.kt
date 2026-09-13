@@ -64,8 +64,15 @@ class MainActivity : ComponentActivity(), ActivityBridge.Host {
         when (intent.action) {
             Intent.ACTION_SEND -> {
                 IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { items += OutgoingItem.File(randomId(8), AndroidFile(this, it)) }
-                intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() && items.isEmpty() }?.let { t ->
-                    items += if (t.looksLikeUrl()) OutgoingItem.Url(randomId(8), t.trim()) else OutgoingItem.Text(randomId(8), t)
+                // WhatsApp / Instagram / browsers share links as EXTRA_TEXT (sometimes with a caption or subject).
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim().orEmpty()
+                if (text.isNotEmpty() && items.isEmpty()) {
+                    val url = text.split(Regex("""\s+""")).firstOrNull { it.looksLikeUrl() }
+                    items += when {
+                        text.looksLikeUrl() -> OutgoingItem.Url(randomId(8), text)
+                        url != null && text.length - url.length < 200 -> OutgoingItem.Url(randomId(8), url)
+                        else -> OutgoingItem.Text(randomId(8), listOfNotNull(intent.getStringExtra(Intent.EXTRA_SUBJECT), text).joinToString("\n"))
+                    }
                 }
             }
             Intent.ACTION_SEND_MULTIPLE -> {
