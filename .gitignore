@@ -22,3 +22,4 @@ node_modules/
 androidApp/keystore.properties
 *.keystore
 *.jks
+dist/
