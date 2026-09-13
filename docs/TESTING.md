@@ -26,6 +26,7 @@ Test engines run with multicast disabled so they never appear on the real LAN.
 4. Turn Wi-Fi off mid-fetch, back on: fetch resumes and completes (Transfers shows retry).
 5. Hotspot mode on the phone, PC joins: PC finds the phone within 15 s.
 6. Deny / Always allow / PIN flows; revoke a trusted device in Settings and confirm the prompt returns.
-7. Android: share a file from Gallery into the app (share sheet), background the app, fetch it
-   from the PC while the phone screen is off.
+7. Android: share a PDF from Files, a photo from Gallery, a link from Instagram and a message
+   with a link from WhatsApp into the app; each appears in the box (links extracted). Background
+   the app and fetch them from the PC while the phone screen is off.
 8. Windows: close to tray, fetch from the phone while minimised; "Open with" a file from Explorer.

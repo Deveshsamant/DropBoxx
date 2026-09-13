@@ -1,7 +1,5 @@
 # DropNest
 
-> The bundled `logo.png` still carries the old wordmark - replace it with a DropNest logo
-> (same 1254x1254 PNG) and re-run the icon generation in `packaging/gen-icons.py`.
 
 Drop anything - files, photos, videos, documents, text, links - into your box, any time, even with
 no other device around. Whenever another device running the app is on the same Wi-Fi (or on your
@@ -19,8 +17,10 @@ macOS and Linux build from the same desktop module (`packageDmg`, `packageDeb`).
 
 ## Features
 
-* **My box** - persistent shelf; drop via drag & drop (PC), share sheet (Android), file picker,
-  clipboard paste, or `Open with`. Items stay until you remove them. Tap a file to open it: images in
+* **My box** - persistent shelf. Android: share from any app (WhatsApp media/documents,
+  Instagram or browser links, Gallery photos) straight into the box - copies are kept in private
+  storage so they survive the original being deleted. PC: drag & drop, "Open with", command line.
+  Also file picker and clipboard paste on both. Items stay until you remove them. Tap a file to open it: images in
   the built-in viewer, everything else (PDF, video, docs) in the system's app.
 * **Devices** - zero-config discovery (multicast + unicast registration + subnet scan + manual IP).
   Tap a device to see what it dropped, select items, **Fetch**.
