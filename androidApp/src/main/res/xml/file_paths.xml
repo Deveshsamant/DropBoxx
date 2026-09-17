@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <!-- Box copies live under filesDir/box; received files on Android 8-9 under the public folders. -->
+    <files-path name="files" path="." />
+    <cache-path name="cache" path="." />
     <external-path name="external" path="." />
     <external-files-path name="external_files" path="." />
-    <cache-path name="cache" path="." />
 </paths>

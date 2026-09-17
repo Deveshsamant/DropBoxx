@@ -14,6 +14,7 @@ import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import co.touchlab.kermit.Logger
+import com.dropnest.core.MimeTypes
 import com.dropnest.domain.BoxFileStore
 import com.dropnest.domain.FilePicker
 import com.dropnest.domain.HotspotController
@@ -67,10 +68,20 @@ class AndroidPlatformServices(private val context: Context, private val launcher
     }
 
     override fun openFile(pathOrUri: String) {
-        val uri = toUri(pathOrUri) ?: return
-        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, context.contentResolver.getType(uri) ?: "*/*")
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        runCatching { context.startActivity(intent) }.onFailure { log.w { "No app can open $uri" } }
+        val uri = toUri(pathOrUri) ?: run { toast("Cannot access this file"); return }
+        val mime = context.contentResolver.getType(uri) ?: MimeTypes.fromFileName(pathOrUri.substringAfterLast('/'))
+        val view = Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        // Always go through the chooser so the user picks the viewer (PDF reader, video player...).
+        val chooser = Intent.createChooser(view, "Open with").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(chooser) }.onFailure {
+            log.w { "No app can open $uri ($mime)" }
+            toast("No app on this phone can open ${mime.substringAfter('/')} files")
+        }
+    }
+
+    private fun toast(message: String) {
+        android.os.Handler(android.os.Looper.getMainLooper()).post { android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show() }
     }
 
     override fun revealFile(pathOrUri: String) {
