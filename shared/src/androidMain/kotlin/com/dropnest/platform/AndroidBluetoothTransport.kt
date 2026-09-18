@@ -33,9 +33,7 @@ class AndroidBluetoothTransport(private val context: Context) : BluetoothTranspo
     private val adapter: BluetoothAdapter? = (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
     override val supported: Boolean = adapter != null && context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)
 
-    private val _ready = MutableStateFlow(isReady())
-    override val ready: StateFlow<Boolean> get() = _ready
-
+    // Declared before [_ready]: the initial readiness check reads it.
     private val permissions: Array<String> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
         else arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -43,11 +41,15 @@ class AndroidBluetoothTransport(private val context: Context) : BluetoothTranspo
     private fun granted() = permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
     private fun isReady() = supported && granted() && adapter?.isEnabled == true
 
+    private val _ready = MutableStateFlow(isReady())
+    override val ready: StateFlow<Boolean> get() = _ready
+
     init {
         // Track the adapter being switched on/off in system settings.
-        context.registerReceiver(object : BroadcastReceiver() {
+        val stateReceiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, i: Intent?) { _ready.value = isReady() }
-        }, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
+        }
+        ContextCompat.registerReceiver(context, stateReceiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED), ContextCompat.RECEIVER_EXPORTED)
     }
 
     override suspend fun enable(): Boolean {
@@ -120,7 +122,7 @@ class AndroidBluetoothTransport(private val context: Context) : BluetoothTranspo
                     into[d.address] = BtDevice(d.address, runCatching { d.name }.getOrNull())
             }
         }
-        context.registerReceiver(receiver, IntentFilter(BluetoothDevice.ACTION_FOUND))
+        ContextCompat.registerReceiver(context, receiver, IntentFilter(BluetoothDevice.ACTION_FOUND), ContextCompat.RECEIVER_EXPORTED)
         try {
             if (!a.startDiscovery()) return
             delay(DISCOVERY_MILLIS)
