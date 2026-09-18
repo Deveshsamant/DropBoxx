@@ -8,8 +8,9 @@
    These three values must be copied into `packaging/windows/AppxManifest.xml`.
 
 ## 2. Build the MSIX
-Requires the Windows 10/11 SDK (`makeappx.exe`, `signtool.exe`) - install via Visual Studio
-Installer -> Individual components -> *Windows 11 SDK*, or `winget install Microsoft.WindowsSDK`.
+Requires the Windows 10/11 SDK (`makeappx.exe`, `signtool.exe`) - **not installed on the dev laptop
+yet**: run `winget install --id Microsoft.WindowsSDK.10.0.26100` (or Visual Studio Installer ->
+Individual components -> *Windows 11 SDK*), about 1 GB, then reopen the terminal.
 
 ```powershell
 ./gradlew :desktopApp:createReleaseDistributable      # app-image with bundled JRE
@@ -24,7 +25,8 @@ signs them with Microsoft's certificate.
 2. *Packages*: upload the `.msix`. It must declare `runFullTrust` (it does) and pass the automatic
    checks (Windows App Certification Kit runs in the cloud).
 3. *Properties*: category Utilities & tools; privacy policy URL (same page as Play).
-4. *Store listings*: description, 1366x768 or larger screenshots (PNG), 300x300 logo.
+4. *Store listings*: description from `docs/store/LISTING.md`, screenshots
+   `docs/store/screenshots/desktop/*.png` (1920x1080), logo `docs/store/msstore-logo-300.png`.
 5. *Pricing and availability*: Free, all markets.
 6. Submit - certification typically takes 1-3 business days.
 

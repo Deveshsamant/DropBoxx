@@ -21,11 +21,12 @@ testers opted in for 14 continuous days** before they can apply for production a
    ```
 3. **Build the release bundle**: `./gradlew :androidApp:bundleRelease` ->
    `androidApp/build/outputs/bundle/release/androidApp-release.aab`.
-4. **Privacy policy URL** - required because the app uses network + notifications. A one-page
-   GitHub Pages / Notion page stating: no data leaves the local network, no analytics, no accounts.
-5. Prepare store assets: 512x512 icon, 1024x500 feature graphic, 4-8 phone screenshots
-   (take them from the phone: `adb exec-out screencap -p > shot.png`), short (80 chars) and full
-   (4000 chars) description.
+4. **Privacy policy URL** - required because the app uses network + notifications. Deploy `site/`
+   on Vercel first (see `site/README.md`); the policy is then at `https://<project>.vercel.app/privacy`.
+5. Store assets are ready in `docs/store/`: 512x512 icon, 1024x500 feature graphic, six 1080x1920
+   phone screenshots (Play rejects raw 1080x2400 captures - the long side may be at most 2x the
+   short side; `packaging/store-shots.py` frames captures correctly), and all listing text in
+   `docs/store/LISTING.md`.
 
 ## 1. Play Console setup
 
@@ -82,7 +83,7 @@ testers opted in for 14 continuous days** before they can apply for production a
 
 * Missing/invalid privacy policy URL, or Data safety form contradicting permissions.
 * `FOREGROUND_SERVICE_DATA_SYNC` needs a justification video/description in
-  *App content -> Foreground service permissions*: "Keeps the receive server running while the user
+  *App content -> Foreground service permissions* (text in `docs/store/LISTING.md`): "Keeps the receive server running while the user
   sends files between their own devices; started only by the user". Add it.
 * NEARBY_WIFI_DEVICES / location: explain "hotspot mode creates a local-only Wi-Fi network".
 * Trademarked name or icon similar to another brand.
