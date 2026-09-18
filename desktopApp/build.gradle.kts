@@ -43,7 +43,7 @@ compose.desktop {
             // the app-image by packaging/windows/build-msix.ps1.
             targetFormats(TargetFormat.Msi, TargetFormat.AppImage)
             packageName = "DropNest"
-            packageVersion = "1.0.0"
+            packageVersion = "1.1.0"
             description = "Drop anything. Share it with every device on your Wi-Fi."
             vendor = "DropNest"
             copyright = "(c) 2026 DropNest"

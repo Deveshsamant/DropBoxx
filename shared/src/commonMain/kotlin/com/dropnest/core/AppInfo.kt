@@ -3,7 +3,7 @@ package com.dropnest.core
 /** Compile-time constants shared by every platform. */
 object AppInfo {
     const val NAME = "DropNest"
-    const val VERSION = "1.0.0"
+    const val VERSION = "1.1.0"
     const val PROTOCOL_VERSION = 1
 
     /** HTTPS API port. If busy the server falls back to a random free port; discovery carries the real one. */
