@@ -119,6 +119,12 @@ section { padding-block: clamp(48px, 7vw, 88px); }
 .gallery figcaption { margin-top: 10px; font-size: .85rem; color: var(--muted); text-align: center; }
 .gallery figure { margin: 0; }
 
+/* live prototype */
+.demo-frame { border-radius: 18px; overflow: hidden; border: 1px solid var(--edge-strong); background: #101220; box-shadow: 0 40px 80px -40px var(--shadow); }
+.demo-frame iframe { display: block; width: 100%; aspect-ratio: 16 / 10; min-height: 420px; border: 0; background: #101220; }
+@media (max-width: 720px) { .demo-frame iframe { aspect-ratio: 3 / 4; } }
+.demo-note { margin-top: 16px; display: flex; justify-content: center; }
+
 /* download */
 .dl { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 @media (max-width: 760px) { .dl { grid-template-columns: 1fr; } }
