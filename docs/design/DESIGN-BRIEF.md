@@ -1,7 +1,11 @@
 # DropNest - redesign brief for Claude Design
 
+> **Status (2026-09-18):** implemented. The Nocturne prototype `DropNest.dc.html` (same folder) is
+> ported to Compose; screenshots of the shipped UI are in `nocturne/`, the pre-redesign ones in
+> `current/`. See `docs/ARCHITECTURE.md` -> "Nocturne design system" for where each piece lives.
+
 **Design system: Nocturne.** Dark-first, electric blue on deep navy, glow + depth. Must also
-have a light variant (the app follows the OS theme).
+have a light variant (user-selectable; dark is the default - no "follow the OS" option).
 
 ## What the app is
 Drop anything (files, photos, videos, documents, text, links) into *your box* - even offline.

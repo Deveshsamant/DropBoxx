@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.DropNest" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
-        <item name="android:windowLightStatusBar">true</item>
+    <!-- Nocturne dark bg (the default theme); Compose repaints immediately, this only covers the first frame. -->
+    <style name="Theme.DropNest" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#161826</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

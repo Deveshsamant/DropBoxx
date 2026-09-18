@@ -33,10 +33,27 @@ by porting only the engine's I/O layer.
 
 ## UI (commonMain)
 
-Screens: **My box** (drop zone + persistent items, multi-select send), **Devices** (this device's
-status, hotspot, nearby peers -> peer box), **Peer box** (browse, multi-select fetch),
-**Transfers** (live + history, tap to open), **Settings**. Adaptive layout: navigation rail on
-wide windows, bottom bar on phones. ViewModels are Koin-injected; state is `StateFlow` snapshots.
+Screens: **Onboarding** (first run: name, visibility), **My box** (3D nest + persistent items),
+**Devices** (orbit of nearby peers, box access, hotspot), **Peer box** (browse, multi-select
+fetch), **Transfers** (live cards with conveyor + history, tap to open), **Settings**. Adaptive
+layout: 212 dp sidebar on wide windows, four-tab bottom bar on phones. ViewModels are
+Koin-injected; state is `StateFlow` snapshots.
+
+### Nocturne design system
+
+The UI is a port of the Claude Design prototype (`docs/design/DropNest.dc.html`, Nocturne):
+
+* `ui/theme/Nocturne.kt` - colour tokens for dark and light (`N.bg`, `N.surface`, `N.accent`, ...),
+  exposed through `LocalNocturne`; a Material 3 scheme is derived from them only for text fields
+  and progress indicators.
+* `ui/theme/PhIcons.kt` - the Phosphor icon subset the prototype uses, as `ImageVector`s.
+* `ui/motion/Motion.kt` - the shared easing (`cubic-bezier(.2,.8,.2,1)`), screen/dialog/sheet
+  transitions, `rise` (staggered list entrance), `hoverLift`, `bobOffset`, and `SpinState`
+  (auto-rotation with drag + inertia for the nest and the orbit).
+* `ui/components/NestHero.kt` - the pseudo-3D nest: hex floor, six glass panels and item chips
+  projected and depth-sorted on a `Canvas`; `Orbit.kt` - peers orbiting this device with depth
+  scale/alpha; `TransferFx.kt` - sheen, conveyor and progress ring for live transfers.
+* Motion can be switched off in Settings (`motion` setting); every animation checks it.
 
 ## Lag-free rules baked in
 

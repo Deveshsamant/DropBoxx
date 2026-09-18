@@ -1,8 +1,7 @@
 package com.dropnest.ui.devices
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,22 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,20 +30,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dropnest.domain.BoxAccess
+import com.dropnest.domain.HotspotState
 import com.dropnest.domain.ServerState
 import com.dropnest.model.Peer
-import com.dropnest.ui.components.DeviceAvatar
-import com.dropnest.ui.components.EmptyState
-import com.dropnest.ui.components.SectionHeader
-import com.dropnest.ui.theme.AppIcons
+import com.dropnest.ui.components.AccentTile
+import com.dropnest.ui.components.AddressDialog
+import com.dropnest.ui.components.EmptyNote
+import com.dropnest.ui.components.HSpace
+import com.dropnest.ui.components.Heading
+import com.dropnest.ui.components.Kicker
+import com.dropnest.ui.components.Muted
+import com.dropnest.ui.components.NButton
+import com.dropnest.ui.components.NButtonStyle
+import com.dropnest.ui.components.NCard
+import com.dropnest.ui.components.NIconButton
+import com.dropnest.ui.components.NSeg
+import com.dropnest.ui.components.NSwitch
+import com.dropnest.ui.components.OrbitField
+import com.dropnest.ui.components.VSpace
+import com.dropnest.ui.components.Well
+import com.dropnest.ui.components.phIcon
+import com.dropnest.ui.motion.rememberSpin
+import com.dropnest.ui.motion.rise
+import com.dropnest.ui.theme.N
+import com.dropnest.ui.theme.Ph
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun DevicesScreen(wide: Boolean, onOpenPeer: (Peer) -> Unit, onMessage: (String) -> Unit, viewModel: DevicesViewModel = koinViewModel()) {
+fun DevicesScreen(wide: Boolean, motion: Boolean, onOpenPeer: (Peer) -> Unit, onMessage: (String) -> Unit, viewModel: DevicesViewModel = koinViewModel()) {
     val peers by viewModel.peers.collectAsStateWithLifecycle()
     val scanning by viewModel.scanning.collectAsStateWithLifecycle()
     val server by viewModel.serverState.collectAsStateWithLifecycle()
@@ -61,119 +69,136 @@ fun DevicesScreen(wide: Boolean, onOpenPeer: (Peer) -> Unit, onMessage: (String)
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val hotspot by viewModel.hotspot.collectAsStateWithLifecycle()
     var addressDialog by remember { mutableStateOf(false) }
-
+    val spin = rememberSpin(autoDegPerSec = 13.2f, enabled = motion)
     LaunchedEffect(viewModel) { viewModel.messages.collect(onMessage) }
+    val visible = server is ServerState.Running || server == ServerState.Starting
+    val t = N
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = if (wide) 24.dp else 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item {
-            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    DeviceAvatar(me.deviceType, size = 52, highlighted = server is ServerState.Running)
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(me.alias, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        when (val s = server) {
-                            is ServerState.Running -> Text(
-                                if (s.addresses.isEmpty()) "Visible - not connected to a network" else "Visible at ${s.addresses.joinToString()} : ${s.port}",
-                                style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace,
-                            )
-                            ServerState.Starting -> Text("Starting...")
-                            ServerState.Stopped -> Text("Hidden - other devices cannot see you", color = MaterialTheme.colorScheme.error)
-                            is ServerState.Failed -> Text(s.message, color = MaterialTheme.colorScheme.error)
+    val accessSeg = @Composable { fill: Boolean ->
+        NSeg(listOf(BoxAccess.ASK to "Ask me", BoxAccess.TRUSTED_ONLY to "Trusted", BoxAccess.EVERYONE to "Anyone"), settings.boxAccess, viewModel::setBoxAccess, fill = fill)
+    }
+
+    if (wide) {
+        Column(Modifier.fillMaxSize().padding(24.dp, 20.dp, 24.dp, 22.dp)) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Column {
+                    Kicker("On this network"); VSpace(5.dp); Heading("Devices"); VSpace(3.dp)
+                    Muted("${peers.size} nearby · you are ${if (visible) "visible as ${me.alias}" else "hidden"}", 12)
+                }
+                Spacer(Modifier.weight(1f))
+                NButton("Add by IP", { addressDialog = true })
+                HSpace(8.dp)
+                if (scanning) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp, color = t.accent) else NIconButton(Ph.Wifi, viewModel::refresh, contentDescription = "Scan")
+                HSpace(8.dp)
+                NButton(if (visible) "Visible" else "Hidden", viewModel::toggleServer, icon = Ph.Eye, style = if (visible) NButtonStyle.Primary else NButtonStyle.Secondary)
+            }
+            VSpace(14.dp)
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+                Well(Modifier.weight(1f).fillMaxSize(), glow = true) {
+                    OrbitField(peers, spin, me.deviceType, me.alias, onOpenPeer, Modifier.fillMaxSize(), radius = 158f, motion = motion)
+                }
+                Column(Modifier.width(316.dp).fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                    NCard(radius = 13.dp, padding = PaddingValues(13.dp)) {
+                        Kicker("Nearby", accent = false, size = 10); VSpace(9.dp)
+                        if (peers.isEmpty()) Muted("No devices yet. Open DropNest on another device on this Wi-Fi, or add it by IP.", 11)
+                        peers.forEachIndexed { i, p -> PeerRow(p, compact = true, Modifier.rise(i, p.id)) { onOpenPeer(p) } }
+                    }
+                    NCard(radius = 13.dp, padding = PaddingValues(13.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Ph.ShieldCheck, null, tint = t.accent, modifier = Modifier.size(15.dp)); HSpace(7.dp)
+                            Text("Who can open my box", color = t.text, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        }
+                        VSpace(7.dp)
+                        Muted("Ask me shows a prompt each time. Trusted devices are the ones you allowed before.", 11)
+                        VSpace(9.dp)
+                        accessSeg(true)
+                    }
+                    if (hotspot.supported) HotspotCard(hotspot, viewModel::toggleHotspot)
+                    Spacer(Modifier.weight(1f))
+                    Well(radius = 12.dp) {
+                        Row(Modifier.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Ph.ShieldCheck, null, tint = t.accent, modifier = Modifier.size(17.dp)); HSpace(9.dp)
+                            Muted("Transfers stay on your LAN and are encrypted end to end.", 11)
                         }
                     }
-                    Switch(checked = server is ServerState.Running || server == ServerState.Starting, onCheckedChange = { viewModel.toggleServer() })
                 }
-                Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp)) {
-                    Text("Who can open my box", style = MaterialTheme.typography.labelLarge)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = settings.boxAccess == BoxAccess.ASK, onClick = { viewModel.setBoxAccess(BoxAccess.ASK) }, label = { Text("Ask me") })
-                        FilterChip(selected = settings.boxAccess == BoxAccess.TRUSTED_ONLY, onClick = { viewModel.setBoxAccess(BoxAccess.TRUSTED_ONLY) }, label = { Text("Trusted only") })
-                        FilterChip(selected = settings.boxAccess == BoxAccess.EVERYONE, onClick = { viewModel.setBoxAccess(BoxAccess.EVERYONE) }, label = { Text("Anyone nearby") })
+            }
+        }
+    } else {
+        Column(Modifier.fillMaxSize()) {
+            Row(Modifier.padding(18.dp, 8.dp, 18.dp, 0.dp), verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f)) {
+                    Kicker("Nearby"); VSpace(3.dp); Heading("Devices", 24); VSpace(2.dp)
+                    Muted(if (visible) "Visible as ${me.alias}" else "Hidden — nobody can see you", 11)
+                }
+                NIconButton(Ph.Eye, viewModel::toggleServer, size = 44.dp, iconSize = 18.dp, style = if (visible) NButtonStyle.Primary else NButtonStyle.Secondary, contentDescription = "Visibility")
+            }
+            Box(Modifier.fillMaxWidth().height(300.dp)) {
+                OrbitField(peers, spin, me.deviceType, "You", onOpenPeer, Modifier.fillMaxSize(), radius = 118f, cardWidth = 140, hint = "", motion = motion)
+                Muted("Drag to spin · tap a device to open its box", 10, Modifier.align(Alignment.BottomStart).padding(18.dp, 0.dp))
+            }
+            Well(Modifier.fillMaxSize(), shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)) {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(12.dp, 0.dp, 12.dp, 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    item {
+                        Row(Modifier.padding(6.dp, 13.dp, 0.dp, 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Kicker("${peers.size} nearby", accent = false, size = 11)
+                            Spacer(Modifier.weight(1f))
+                            NButton("Add by IP", { addressDialog = true }, style = NButtonStyle.Ghost, fontSize = 12, padding = PaddingValues(10.dp, 9.dp))
+                            if (scanning) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = t.accent) else NIconButton(Ph.Wifi, viewModel::refresh, size = 44.dp, iconSize = 18.dp, style = NButtonStyle.Ghost)
+                        }
                     }
+                    if (peers.isEmpty()) item { EmptyNote("No devices found yet", "Open DropNest on the other device on the same Wi-Fi. Tap the Wi-Fi icon to scan, or add it by IP.") }
+                    itemsIndexed(peers, key = { _, p -> p.id }) { i, p -> PeerRow(p, compact = false, Modifier.rise(i, p.id)) { onOpenPeer(p) } }
+                    item {
+                        VSpace(6.dp)
+                        NCard(radius = 13.dp, padding = PaddingValues(13.dp)) {
+                            Text("Who can open my box", color = t.text, fontSize = 13.sp, fontWeight = FontWeight.Medium); VSpace(8.dp)
+                            accessSeg(true)
+                        }
+                    }
+                    if (hotspot.supported) item { VSpace(4.dp); HotspotCard(hotspot, viewModel::toggleHotspot) }
                 }
             }
         }
-        if (hotspot.supported) item { HotspotCard(hotspot, viewModel::toggleHotspot) }
-        item {
-            SectionHeader("Nearby devices") {
-                TextButton(onClick = { addressDialog = true }) { Text("Add by IP") }
-                if (scanning) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                else IconButton(onClick = viewModel::refresh) { Icon(Icons.Default.Refresh, contentDescription = "Scan network") }
-            }
-        }
-        if (peers.isEmpty()) item {
-            EmptyState(AppIcons.Wifi, "No devices found yet", "Open DropNest on the other device on the same Wi-Fi. Tap refresh to scan, or add it by IP.")
-        }
-        items(peers, key = { it.id }) { peer -> PeerCard(peer, onOpen = { onOpenPeer(peer) }) }
     }
-
-    if (addressDialog) AddressDialog(onDismiss = { addressDialog = false }) { viewModel.addByAddress(it); addressDialog = false }
+    if (addressDialog) AddressDialog({ addressDialog = false }) { viewModel.addByAddress(it); addressDialog = false }
 }
 
 @Composable
-private fun PeerCard(peer: Peer, onOpen: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
-    ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            DeviceAvatar(peer.info.deviceType, highlighted = peer.trusted)
-            Spacer(Modifier.width(12.dp))
+private fun PeerRow(peer: Peer, compact: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val t = N
+    NCard(modifier.fillMaxWidth(), radius = if (compact) 10.dp else 12.dp, color = if (compact) androidx.compose.ui.graphics.Color.Transparent else t.surface, elevation = if (compact) 0 else 1, onClick = onClick, padding = PaddingValues(if (compact) 9.dp else 11.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AccentTile(peer.info.deviceType.phIcon(), size = if (compact) 32.dp else 38.dp, iconSize = 17.dp, radius = if (compact) 8.dp else 10.dp, muted = !peer.trusted)
+            HSpace(10.dp)
             Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(peer.info.alias, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (peer.trusted) Icon(AppIcons.Shield, contentDescription = "Trusted", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
-                }
-                Text("${peer.address} - tap to see what they dropped", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(peer.info.alias, color = t.text, fontSize = if (compact) 12.5.sp else 13.sp, fontWeight = FontWeight.Medium, lineHeight = 16.sp, maxLines = 1)
+                Text(if (peer.trusted) "Trusted · ${peer.address}" else "${peer.address} · tap to open", color = if (peer.trusted) t.accent else t.muted, fontSize = 10.5.sp, lineHeight = 13.sp, maxLines = 1)
             }
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Ph.CaretRight, null, tint = t.muted, modifier = Modifier.size(15.dp))
         }
     }
 }
 
 @Composable
-private fun HotspotCard(hotspot: com.dropnest.domain.HotspotState, onToggle: () -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(AppIcons.Tethering, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                Spacer(Modifier.width(10.dp))
-                Text("No Wi-Fi around? Hotspot mode", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Switch(hotspot.active || hotspot.starting, { onToggle() })
+private fun HotspotCard(hotspot: HotspotState, onToggle: () -> Unit) {
+    val t = N
+    NCard(Modifier.fillMaxWidth(), radius = 13.dp, padding = PaddingValues(13.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Ph.Wifi, null, tint = t.accent, modifier = Modifier.size(16.dp)); HSpace(8.dp)
+            Text("No Wi-Fi around? Hotspot mode", color = t.text, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            NSwitch(hotspot.active || hotspot.starting, { onToggle() })
+        }
+        VSpace(6.dp)
+        when {
+            hotspot.active -> {
+                Muted("Connect the other device to this network; it then appears in its device list.", 11); VSpace(6.dp)
+                Text("Network:  ${hotspot.ssid}", color = t.text, fontFamily = FontFamily.Monospace, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text("Password: ${hotspot.password}", color = t.text, fontFamily = FontFamily.Monospace, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
-            Spacer(Modifier.height(6.dp))
-            when {
-                hotspot.active -> {
-                    Text("Connect the other device to this network; it will then appear in its device list.", style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.height(6.dp))
-                    Text("Network:  ${hotspot.ssid}", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold)
-                    Text("Password: ${hotspot.password}", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold)
-                }
-                hotspot.starting -> Text("Starting hotspot...", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                hotspot.error != null -> Text(hotspot.error, color = MaterialTheme.colorScheme.error)
-                else -> Text("Turns this phone into a local network so a PC or another phone can connect directly - no router or internet needed.",
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            hotspot.starting -> Muted("Starting hotspot…", 11)
+            hotspot.error != null -> Text(hotspot.error, color = t.bad, fontSize = 11.sp)
+            else -> Muted("Turns this phone into a local network so a PC or another phone can connect directly — no router or internet needed.", 11)
         }
     }
-}
-
-@Composable
-private fun AddressDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var address by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Connect by IP address") },
-        text = {
-            Column {
-                Text("Shown on the other device under Devices, e.g. 192.168.1.20 or 192.168.1.20:47843.")
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(address, { address = it.trim() }, label = { Text("IP address") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            }
-        },
-        confirmButton = { TextButton(onClick = { onConfirm(address) }, enabled = address.isNotBlank()) { Text("Connect") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
 }

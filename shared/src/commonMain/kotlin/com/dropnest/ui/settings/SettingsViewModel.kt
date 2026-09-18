@@ -32,6 +32,8 @@ class SettingsViewModel(
     fun setAlias(alias: String) = settings.update { copy(alias = alias.trim().ifEmpty { platform.defaultAlias }) }
     fun setQuickSave(enabled: Boolean) = settings.update { copy(quickSave = enabled) }
     fun setBoxAccess(access: BoxAccess) = settings.update { copy(boxAccess = access) }
+    fun setMotion(enabled: Boolean) = settings.update { copy(motion = enabled) }
+    fun replayOnboarding() = settings.update { copy(onboardingDone = false) }
     fun setPin(pin: String) = settings.update { copy(pin = pin.filter { it.isDigit() }.take(8)) }
     fun setAutoCopyText(enabled: Boolean) = settings.update { copy(autoCopyText = enabled) }
     fun setAutoOpenLinks(enabled: Boolean) = settings.update { copy(autoOpenLinks = enabled) }

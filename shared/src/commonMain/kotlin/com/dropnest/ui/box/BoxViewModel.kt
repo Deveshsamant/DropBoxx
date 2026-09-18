@@ -24,6 +24,8 @@ data class BoxUiState(
     val items: List<BoxItem> = emptyList(),
     val importing: Boolean = false,
     val dropHover: Boolean = false,
+    /** Phone quick-add "Text"/"Link" opened the text dialog. */
+    val textPrompt: Boolean = false,
 ) {
     val totalBytes: Long get() = items.sumOf { it.size }
 }
@@ -37,9 +39,10 @@ class BoxViewModel(
 
     private val importing = MutableStateFlow(false)
     private val dropHover = MutableStateFlow(false)
+    private val textPrompt = MutableStateFlow(false)
 
-    val state: StateFlow<BoxUiState> = combine(box.items, importing, inbox.importing, dropHover) { items, imp, shared, hover ->
-        BoxUiState(items.sortedByDescending { it.addedAt }, imp || shared > 0, hover)
+    val state: StateFlow<BoxUiState> = combine(box.items, importing, inbox.importing, dropHover, textPrompt) { items, imp, shared, hover, prompt ->
+        BoxUiState(items.sortedByDescending { it.addedAt }, imp || shared > 0, hover, prompt)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BoxUiState())
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
@@ -76,6 +79,8 @@ class BoxViewModel(
     fun remove(id: String) = box.remove(id)
     fun clear() = box.clear()
     fun setDropHover(hover: Boolean) { dropHover.value = hover }
+    fun requestText() { textPrompt.value = true }
+    fun dismissText() { textPrompt.value = false }
 
     fun open(item: BoxItem) {
         if (item.kind == ItemKind.URL) platform.openUrl(item.content.orEmpty()) else item.source?.let(platform::openFile)

@@ -29,7 +29,12 @@ macOS and Linux build from the same desktop module (`packageDmg`, `packageDeb`).
   devices with a per-device secret token. Optional PIN.
 * **Transfers** - parallel streams, live speed/ETA, resume after a dropped Wi-Fi link, history.
 * **Hotspot mode** (Android) - one tap local-only hotspot when no router is around.
-* Windows: system tray, minimize-to-tray, launch at login, single instance.
+* **Nocturne UI** - the Claude Design prototype (`docs/design/DropNest.dc.html`) ported 1:1 to
+  Compose: dark/light themes, a draggable 3D nest that fills as you drop, peers orbiting your
+  device, conveyor and sheen on live transfers, staggered card entrances, bottom sheets on
+  phones and dialogs on desktop. "Motion & depth" can be turned off in Settings.
+* Windows: themed custom title bar (drag, double-click to maximise, resizable edges), system tray,
+  minimize-to-tray, launch at login, single instance.
   Android: foreground service keeps receiving in the background; files land in Pictures/Movies/
   Music/Download -> `DropNest` via MediaStore (no storage permission on Android 10+).
 

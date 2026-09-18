@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Notification
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowDecoration
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberTrayState
 import androidx.compose.ui.window.rememberWindowState
@@ -35,6 +36,7 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import kotlin.system.exitProcess
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 fun main(args: Array<String>) {
     System.setProperty("sun.java2d.uiScale.enabled", "true")
     val singleInstance = runCatching { ServerSocket(47899, 1, InetAddress.getLoopbackAddress()) }.getOrNull()
@@ -74,14 +76,17 @@ fun main(args: Array<String>) {
             },
         )
 
+        val windowState = rememberWindowState(size = DpSize(1100.dp, 740.dp))
+        val close = { if (settings.current.minimizeToTray) visible = false else { server.stop(); exitApplication() } }
         Window(
-            onCloseRequest = { if (settings.current.minimizeToTray) visible = false else { server.stop(); exitApplication() } },
+            onCloseRequest = close,
             visible = visible,
             title = AppInfo.NAME,
             icon = logo,
-            state = rememberWindowState(size = DpSize(1100.dp, 740.dp)),
+            state = windowState,
+            decoration = WindowDecoration.Undecorated(resizerThickness = 6.dp),
         ) {
-            App()
+            App(topBar = { NocturneTitleBar(windowState, logo, close) })
         }
     }
 }

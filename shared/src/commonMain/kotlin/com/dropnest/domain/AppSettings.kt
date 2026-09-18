@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
-enum class ThemeMode { SYSTEM, LIGHT, DARK }
+/** Nocturne is dark-first; there is no "follow the OS" option by design. */
+enum class ThemeMode { LIGHT, DARK }
 
 /** Who may open this device's box. */
 enum class BoxAccess { ASK, TRUSTED_ONLY, EVERYONE }
@@ -27,6 +28,8 @@ data class SettingsState(
     val launchAtStartup: Boolean,
     val onboardingDone: Boolean,
     val boxAccess: BoxAccess,
+    /** 3D nest, orbit and card flight. Off = flat, static UI. */
+    val motion: Boolean,
 )
 
 /** Persisted user preferences. Cheap to read, observable as a StateFlow. */
@@ -44,11 +47,12 @@ class AppSettings(private val settings: Settings, defaultAlias: String, defaultS
         autoCopyText = settings.getBoolean(K_AUTO_COPY, true),
         autoOpenLinks = settings.getBoolean(K_AUTO_OPEN_LINKS, false),
         saveDirectory = settings.getString(K_SAVE_DIR, defaultSaveDirectory),
-        themeMode = runCatching { ThemeMode.valueOf(settings.getString(K_THEME, ThemeMode.SYSTEM.name)) }.getOrDefault(ThemeMode.SYSTEM),
+        themeMode = runCatching { ThemeMode.valueOf(settings.getString(K_THEME, ThemeMode.DARK.name)) }.getOrDefault(ThemeMode.DARK),
         minimizeToTray = settings.getBoolean(K_MIN_TO_TRAY, true),
         launchAtStartup = settings.getBoolean(K_LAUNCH_AT_STARTUP, false),
         onboardingDone = settings.getBoolean(K_ONBOARDING, false),
         boxAccess = runCatching { BoxAccess.valueOf(settings.getString(K_BOX_ACCESS, BoxAccess.ASK.name)) }.getOrDefault(BoxAccess.ASK),
+        motion = settings.getBoolean(K_MOTION, true),
     )
 
     fun update(block: SettingsState.() -> SettingsState) {
@@ -69,6 +73,7 @@ class AppSettings(private val settings: Settings, defaultAlias: String, defaultS
         settings.putBoolean(K_LAUNCH_AT_STARTUP, s.launchAtStartup)
         settings.putBoolean(K_ONBOARDING, s.onboardingDone)
         settings.putString(K_BOX_ACCESS, s.boxAccess.name)
+        settings.putBoolean(K_MOTION, s.motion)
     }
 
     /** Stable per-install id; created once. */
@@ -89,5 +94,6 @@ class AppSettings(private val settings: Settings, defaultAlias: String, defaultS
         const val K_ONBOARDING = "onboarding_done"
         const val K_INSTALL_ID = "install_id"
         const val K_BOX_ACCESS = "box_access"
+        const val K_MOTION = "motion"
     }
 }

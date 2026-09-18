@@ -41,6 +41,13 @@ class AppViewModel(
 
     val themeMode: StateFlow<ThemeMode> = settings.state.map { it.themeMode }
         .stateIn(viewModelScope, SharingStarted.Eagerly, settings.current.themeMode)
+    val motion: StateFlow<Boolean> = settings.state.map { it.motion }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, settings.current.motion)
+    val onboardingDone: StateFlow<Boolean> = settings.state.map { it.onboardingDone }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, settings.current.onboardingDone)
+    val settingsState: StateFlow<com.dropnest.domain.SettingsState> = settings.state
+
+    fun finishOnboarding(alias: String) = settings.update { copy(onboardingDone = true, alias = alias.trim().ifEmpty { this.alias }) }
     val me: StateFlow<DeviceInfo> = identity.info
     val serverState: StateFlow<ServerState> = server.state
     val incomingRequest: StateFlow<IncomingRequest?> = engine.incomingRequest

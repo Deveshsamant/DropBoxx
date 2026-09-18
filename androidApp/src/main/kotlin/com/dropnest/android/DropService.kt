@@ -31,6 +31,7 @@ class DropService : Service() {
     private val server: LocalServer by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var stateJob: Job? = null
+    private var timedOut = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -40,7 +41,12 @@ class DropService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        startInForeground(buildNotification("Starting..."))
+        // Android 15 budgets dataSync services (6 h/day); once it is spent startForeground throws
+        // and the service must not linger, otherwise the system kills the whole process.
+        if (timedOut || runCatching { startInForeground(buildNotification("Starting...")) }.isFailure) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         server.start()
         if (stateJob == null) stateJob = scope.launch {
             server.state.collect { s ->
@@ -50,7 +56,7 @@ class DropService : Service() {
                     ServerState.Stopped -> "Receiving is off"
                     is ServerState.Failed -> s.message
                 }
-                runCatching { startInForeground(buildNotification(text)) }
+                if (!timedOut) runCatching { startInForeground(buildNotification(text)) }
             }
         }
         return START_STICKY
@@ -77,7 +83,11 @@ class DropService : Service() {
      * Android 15+ caps dataSync services at 6 h per day and calls this when time is up; the app
      * must stop promptly or it is killed. The server keeps running while the activity is visible.
      */
-    override fun onTimeout(startId: Int, fgsType: Int) {
+    override fun onTimeout(startId: Int, fgsType: Int) = onTimeout(startId)
+
+    override fun onTimeout(startId: Int) {
+        timedOut = true
+        stateJob?.cancel(); stateJob = null
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
