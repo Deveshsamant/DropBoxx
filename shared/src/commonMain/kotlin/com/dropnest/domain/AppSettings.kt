@@ -30,6 +30,8 @@ data class SettingsState(
     val boxAccess: BoxAccess,
     /** 3D nest, orbit and card flight. Off = flat, static UI. */
     val motion: Boolean,
+    /** Secondary transport: reach paired devices over Bluetooth when there is no Wi-Fi route. */
+    val bluetooth: Boolean,
 )
 
 /** Persisted user preferences. Cheap to read, observable as a StateFlow. */
@@ -53,6 +55,7 @@ class AppSettings(private val settings: Settings, defaultAlias: String, defaultS
         onboardingDone = settings.getBoolean(K_ONBOARDING, false),
         boxAccess = runCatching { BoxAccess.valueOf(settings.getString(K_BOX_ACCESS, BoxAccess.ASK.name)) }.getOrDefault(BoxAccess.ASK),
         motion = settings.getBoolean(K_MOTION, true),
+        bluetooth = settings.getBoolean(K_BLUETOOTH, false),
     )
 
     fun update(block: SettingsState.() -> SettingsState) {
@@ -74,6 +77,7 @@ class AppSettings(private val settings: Settings, defaultAlias: String, defaultS
         settings.putBoolean(K_ONBOARDING, s.onboardingDone)
         settings.putString(K_BOX_ACCESS, s.boxAccess.name)
         settings.putBoolean(K_MOTION, s.motion)
+        settings.putBoolean(K_BLUETOOTH, s.bluetooth)
     }
 
     /** Stable per-install id; created once. */
@@ -95,5 +99,6 @@ class AppSettings(private val settings: Settings, defaultAlias: String, defaultS
         const val K_INSTALL_ID = "install_id"
         const val K_BOX_ACCESS = "box_access"
         const val K_MOTION = "motion"
+        const val K_BLUETOOTH = "bluetooth"
     }
 }

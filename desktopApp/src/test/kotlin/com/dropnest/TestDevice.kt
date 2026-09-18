@@ -9,6 +9,7 @@ import com.dropnest.domain.ReceiveStorage
 import com.dropnest.domain.ServerState
 import com.dropnest.engine.box.BoxAccessController
 import com.dropnest.engine.box.BoxClient
+import com.dropnest.engine.chat.ChatServiceImpl
 import com.dropnest.engine.box.BoxRepositoryImpl
 import com.dropnest.engine.discovery.MulticastDiscovery
 import com.dropnest.engine.identity.IdentityManager
@@ -84,7 +85,8 @@ class TestDevice(val name: String, root: File) {
     val boxAccess = BoxAccessController(box, trust, settings, identity, platform)
     val boxClient = BoxClient(registry, clients, trust, identity, platform, scope, receive.receivedContent)
     val engine = TransferEngineImpl(registry, send, receive, boxClient, boxAccess)
-    val server = DropServer(identity, settings, discovery, receive, boxAccess, scope)
+    val chat = ChatServiceImpl(dir.absolutePath, identity, trust, discovery, clients, platform, box, scope)
+    val server = DropServer(identity, settings, discovery, receive, boxAccess, chat, scope)
 
     suspend fun start(): Int {
         server.start()

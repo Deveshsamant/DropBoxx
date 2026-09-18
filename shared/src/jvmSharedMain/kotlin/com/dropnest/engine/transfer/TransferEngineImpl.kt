@@ -32,7 +32,7 @@ class TransferEngineImpl(
     override val receivedContent: Flow<ReceivedContent> get() = receiver.receivedContent
 
     override suspend fun send(peer: Peer, items: List<OutgoingItem>, pin: String?): SendOutcome = sender.send(peer, items, pin)
-    override suspend fun browse(peer: Peer, pin: String?): BrowseOutcome = boxClient.browse(peer, pin)
+    override suspend fun browse(peer: Peer, pin: String?, visitToken: String?): BrowseOutcome = boxClient.browse(peer, pin, visitToken)
     override fun download(peer: Peer, entries: List<BoxEntry>, accessToken: String): String = boxClient.download(peer, entries, accessToken)
 
     override fun respond(sessionId: String, decision: IncomingDecision) = receiver.respond(sessionId, decision)

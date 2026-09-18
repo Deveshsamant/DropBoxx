@@ -15,3 +15,8 @@ fun randomId(length: Int = 22): String {
 expect fun secureToken(bytes: Int = 32): String
 
 expect fun nowMillis(): Long
+
+/** Local calendar fields of an epoch instant, for chat timestamps. */
+data class LocalClock(val year: Int, val month: Int, val day: Int, val hour: Int, val minute: Int, val epochDay: Long)
+
+expect fun localClock(millis: Long): LocalClock

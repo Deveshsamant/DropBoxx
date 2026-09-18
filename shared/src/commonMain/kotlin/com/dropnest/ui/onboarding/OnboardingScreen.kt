@@ -3,10 +3,12 @@ package com.dropnest.ui.onboarding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -80,11 +82,13 @@ fun OnboardingScreen(wide: Boolean, motion: Boolean, initialName: String, visibl
                 VSpace(12.dp)
                 VisibleRow(visible, onVisible)
             }
-            Box(Modifier.weight(1f).height(420.dp)) { NestHero(demoChips, spin, Modifier.fillMaxSize(), scale = 1.28f, motion = motion) }
+            Box(Modifier.weight(1f).fillMaxHeight(0.8f)) { NestHero(demoChips, spin, Modifier.fillMaxSize(), scale = 1.28f, motion = motion) }
         }
     } else {
-        Column(bg.statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState())) {
-            Box(Modifier.fillMaxWidth().height(270.dp)) { NestHero(demoChips, spin, Modifier.fillMaxSize(), scale = 0.9f, motion = motion) }
+        BoxWithConstraints(bg.statusBarsPadding().navigationBarsPadding()) {
+        val heroHeight = (maxHeight * 0.36f).coerceIn(150.dp, 270.dp)
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Box(Modifier.fillMaxWidth().height(heroHeight)) { NestHero(demoChips, spin, Modifier.fillMaxSize(), scale = 0.9f, motion = motion) }
             Column(Modifier.padding(22.dp, 0.dp, 22.dp, 22.dp)) {
                 Kicker("Welcome to DropNest"); VSpace(8.dp)
                 Text("A box that travels with you.", color = t.text, fontSize = 31.sp, lineHeight = 34.sp, fontWeight = FontWeight.Medium, letterSpacing = (-0.5).sp)
@@ -97,6 +101,7 @@ fun OnboardingScreen(wide: Boolean, motion: Boolean, initialName: String, visibl
                 VSpace(12.dp)
                 NButton("Open my nest", { onDone(name) }, Modifier.fillMaxWidth(), style = NButtonStyle.Primary, fontSize = 14, padding = PaddingValues(14.dp, 13.dp), trailing = { Icon(Ph.CaretRight, null, Modifier.size(16.dp)) })
             }
+        }
         }
     }
 }

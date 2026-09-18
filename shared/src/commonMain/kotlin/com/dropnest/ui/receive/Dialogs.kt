@@ -127,6 +127,7 @@ fun AccessRequestDialog(request: AccessRequest, wide: Boolean, motion: Boolean, 
             Column {
                 Text("Someone wants in", color = t.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                 Muted("${request.requester.alias} wants to open your box · ${request.address}", 11)
+                Muted("\"Always allow\" also lets you message each other in Chats.", 10)
             }
         }
         VSpace(13.dp)

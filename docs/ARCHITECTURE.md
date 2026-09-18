@@ -35,7 +35,8 @@ by porting only the engine's I/O layer.
 
 Screens: **Onboarding** (first run: name, visibility), **My box** (3D nest + persistent items),
 **Devices** (orbit of nearby peers, box access, hotspot), **Peer box** (browse, multi-select
-fetch), **Transfers** (live cards with conveyor + history, tap to open), **Settings**. Adaptive
+fetch, refresh + 6 s auto-poll), **Chats** (threads with trusted devices; two-pane on desktop),
+**Transfers** (live cards with conveyor + history, tap to open), **Settings**. Adaptive
 layout: 212 dp sidebar on wide windows, four-tab bottom bar on phones. ViewModels are
 Koin-injected; state is `StateFlow` snapshots.
 
@@ -54,6 +55,13 @@ The UI is a port of the Claude Design prototype (`docs/design/DropNest.dc.html`,
   projected and depth-sorted on a `Canvas`; `Orbit.kt` - peers orbiting this device with depth
   scale/alpha; `TransferFx.kt` - sheen, conveyor and progress ring for live transfers.
 * Motion can be switched off in Settings (`motion` setting); every animation checks it.
+
+### Chat (engine/chat)
+
+`ChatServiceImpl` owns `chat.json`, exposes `conversations` / `messages` flows, queues outgoing
+messages and flushes them per peer (mutex per peer, retry loop) via `POST /api/v1/chat`. The
+server side accepts only trusted senders (pair token). `activeThread` tells the service which
+thread is on screen so it marks those messages read and skips the system notification.
 
 ## Lag-free rules baked in
 

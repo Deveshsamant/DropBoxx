@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dropnest.core.AppInfo
 import com.dropnest.domain.AppSettings
+import com.dropnest.domain.BluetoothControl
 import com.dropnest.domain.BoxAccess
 import com.dropnest.domain.DeviceIdentity
 import com.dropnest.domain.DiscoveryService
@@ -25,7 +26,15 @@ class DevicesViewModel(
     private val settings: AppSettings,
     private val platform: PlatformServices,
     identity: DeviceIdentity,
+    private val bluetooth: BluetoothControl,
 ) : ViewModel() {
+
+    val bluetoothSupported: Boolean get() = bluetooth.supported
+    val bluetoothActive: StateFlow<Boolean> = bluetooth.active
+    fun toggleBluetooth() {
+        if (settings.current.bluetooth) bluetooth.disable()
+        else viewModelScope.launch { if (!bluetooth.enable()) _messages.tryEmit("Turn on Bluetooth and allow the permission to use it as a fallback") }
+    }
 
     val peers: StateFlow<List<Peer>> = discovery.peers
     val scanning: StateFlow<Boolean> = discovery.scanning

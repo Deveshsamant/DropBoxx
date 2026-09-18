@@ -13,6 +13,8 @@ import com.dropnest.model.Peer
 import com.dropnest.model.ReceivedContent
 import com.dropnest.model.TransferSession
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /** Our own identity on the network. */
@@ -68,8 +70,8 @@ sealed interface BrowseOutcome {
 /** The user's own box: persistent, survives restarts, browsable by allowed peers. */
 interface BoxRepository {
     val items: StateFlow<List<BoxItem>>
-    /** Imports items; returns the names that could not be read and were skipped. */
-    suspend fun add(items: List<OutgoingItem>): List<String>
+    /** Imports items; returns the names that could not be read and were skipped. [forPeer] makes them a private drop. */
+    suspend fun add(items: List<OutgoingItem>, forPeer: DeviceInfo? = null): List<String>
     fun remove(id: String)
     fun clear()
     /** Resolves a FILE item back to something streamable, or null when it is gone. */
@@ -84,7 +86,8 @@ interface TransferEngine {
     val receivedContent: Flow<ReceivedContent>
 
     /** Opens a peer's box. May block while the peer's user decides. */
-    suspend fun browse(peer: Peer, pin: String? = null): BrowseOutcome
+    /** Lists a peer's box; pass the [BrowseOutcome.Ok.accessToken] of the current visit to refresh without re-approval. */
+    suspend fun browse(peer: Peer, pin: String? = null, visitToken: String? = null): BrowseOutcome
     /** Pulls entries from a peer's box into a RECEIVE session; returns the session id. */
     fun download(peer: Peer, entries: List<BoxEntry>, accessToken: String): String
     fun respondAccess(requestId: String, decision: AccessDecision)
@@ -120,4 +123,36 @@ interface HistoryStore {
     fun add(session: TransferSession)
     fun remove(id: String)
     fun clear()
+}
+
+/**
+ * Device-to-device messages between devices that trust each other ("Always allow" on both sides).
+ * Written any time; delivered whenever the peer is on the network.
+ */
+interface ChatService {
+    /** True when that device has trusted us, i.e. it will accept our messages. */
+    fun canMessage(peerId: String): Boolean
+    val conversations: StateFlow<List<com.dropnest.model.Conversation>>
+    val messages: StateFlow<List<com.dropnest.model.ChatMessage>>
+    /** Fires for every message received from a peer. */
+    val incoming: SharedFlow<com.dropnest.model.ChatMessage>
+    /** The thread currently on screen; its messages are marked read and not notified. */
+    val activeThread: MutableStateFlow<String?>
+    fun send(peer: com.dropnest.model.DeviceInfo, text: String)
+    /** Drops files into this device's box privately for [peer] and posts one file message per item. */
+    suspend fun sendFiles(peer: com.dropnest.model.DeviceInfo, files: List<com.dropnest.model.PlatformFile>): List<String>
+    /** Receiver side: remember where a fetched attachment was saved. */
+    fun attachmentSaved(messageId: String, localPath: String)
+    fun retry(messageId: String)
+    fun markRead(peerId: String)
+    fun clearThread(peerId: String)
+}
+
+/** Secondary transport switch (Bluetooth). Wi-Fi/hotspot stay primary; this only adds a fallback route. */
+interface BluetoothControl {
+    val supported: Boolean
+    /** Feature on and radio usable. */
+    val active: StateFlow<Boolean>
+    suspend fun enable(): Boolean
+    fun disable()
 }

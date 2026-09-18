@@ -27,8 +27,13 @@ macOS and Linux build from the same desktop module (`packageDmg`, `packageDeb`).
 * **Approval & trust** - the owner chooses who can open the box: *Ask me* (a prompt with
   Allow once / Always allow / Deny), *Trusted only*, or *Anyone nearby*. *Always allow* pairs the
   devices with a per-device secret token. Optional PIN.
+* **Chats** - message a trusted device any time; it's delivered the moment both are on the same
+  network (queued with a clock tick until then, double tick when it lands). Trusted devices only,
+  nothing leaves your Wi-Fi.
 * **Transfers** - parallel streams, live speed/ETA, resume after a dropped Wi-Fi link, history.
 * **Hotspot mode** (Android) - one tap local-only hotspot when no router is around.
+* **Bluetooth fallback** (opt-in) - paired devices stay reachable for chat, links and small
+  files with no network at all; Wi-Fi/hotspot remain the primary, fast route.
 * **Nocturne UI** - the Claude Design prototype (`docs/design/DropNest.dc.html`) ported 1:1 to
   Compose: dark/light themes, a draggable 3D nest that fills as you drop, peers orbiting your
   device, conveyor and sheen on live transfers, staggered card entrances, bottom sheets on

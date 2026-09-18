@@ -20,6 +20,9 @@ data class BoxItem(
     val content: String? = null,
     /** False when the source file disappeared (moved, deleted, permission lost). */
     val available: Boolean = true,
+    /** Private drop: only this device may list and fetch it (null = every trusted/allowed device). */
+    val forPeerId: String? = null,
+    val forPeerAlias: String? = null,
 )
 
 /** What a peer sees of a box item. */
@@ -39,6 +42,8 @@ data class BoxListRequest(
     val info: DeviceInfo,
     val pairToken: String? = null,
     val pin: String? = null,
+    /** Token from an earlier [BoxListResponse]: re-list (refresh) without asking the owner again. */
+    val visitToken: String? = null,
 )
 
 @Serializable
@@ -57,7 +62,10 @@ data class AccessRequest(
     val requester: DeviceInfo,
     val address: String,
     val receivedAt: Long,
+    val purpose: AccessPurpose = AccessPurpose.BOX,
 )
+
+enum class AccessPurpose { BOX, CHAT }
 
 data class AccessDecision(val allow: Boolean, val always: Boolean = false)
 

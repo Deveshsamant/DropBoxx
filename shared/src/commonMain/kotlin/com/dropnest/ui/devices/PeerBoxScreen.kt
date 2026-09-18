@@ -55,6 +55,7 @@ import com.dropnest.ui.components.phIcon
 import com.dropnest.ui.motion.rise
 import com.dropnest.ui.theme.N
 import com.dropnest.ui.theme.Ph
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -62,6 +63,8 @@ import org.koin.core.parameter.parametersOf
 fun PeerBoxScreen(peerId: String, wide: Boolean, onBack: () -> Unit, onMessage: (String) -> Unit, viewModel: PeerBoxViewModel = koinViewModel { parametersOf(peerId) }) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) { viewModel.messages.collect(onMessage) }
+    // Quiet poll while this screen is open; the visit token means the owner is never asked again.
+    LaunchedEffect(viewModel) { while (true) { delay(6_000); viewModel.autoRefresh() } }
     val peer = state.peer
     val t = N
     val ready = state.status as? PeerBoxStatus.Ready
@@ -69,6 +72,11 @@ fun PeerBoxScreen(peerId: String, wide: Boolean, onBack: () -> Unit, onMessage: 
 
     Column(Modifier.fillMaxSize().padding(horizontal = if (wide) 24.dp else 14.dp, vertical = if (wide) 18.dp else 6.dp)) {
         val actions: @Composable () -> Unit = {
+            if (ready != null) {
+                if (state.refreshing) Box(Modifier.size(if (wide) 32.dp else 40.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = t.accent) }
+                else NIconButton(Ph.ArrowsClockwise, { viewModel.refresh() }, size = if (wide) 32.dp else 40.dp, iconSize = 16.dp, contentDescription = "Refresh")
+                HSpace(8.dp)
+            }
             if (ready != null && ready.items.isNotEmpty()) {
                 if (state.selected.isEmpty()) NButton("Select all", viewModel::selectAll, style = NButtonStyle.Ghost, fontSize = if (wide) 12 else 11)
                 else NButton("Deselect", viewModel::clearSelection, style = NButtonStyle.Ghost, fontSize = if (wide) 12 else 11)

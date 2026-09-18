@@ -58,6 +58,7 @@ import com.dropnest.ui.motion.rememberSpin
 import com.dropnest.ui.motion.rise
 import com.dropnest.ui.theme.N
 import com.dropnest.ui.theme.Ph
+import com.dropnest.LocalWindowWide
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -68,6 +69,7 @@ fun DevicesScreen(wide: Boolean, motion: Boolean, onOpenPeer: (Peer) -> Unit, on
     val me by viewModel.me.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val hotspot by viewModel.hotspot.collectAsStateWithLifecycle()
+    val btActive by viewModel.bluetoothActive.collectAsStateWithLifecycle()
     var addressDialog by remember { mutableStateOf(false) }
     val spin = rememberSpin(autoDegPerSec = 13.2f, enabled = motion)
     LaunchedEffect(viewModel) { viewModel.messages.collect(onMessage) }
@@ -97,7 +99,7 @@ fun DevicesScreen(wide: Boolean, motion: Boolean, onOpenPeer: (Peer) -> Unit, on
                 Well(Modifier.weight(1f).fillMaxSize(), glow = true) {
                     OrbitField(peers, spin, me.deviceType, me.alias, onOpenPeer, Modifier.fillMaxSize(), radius = 158f, motion = motion)
                 }
-                Column(Modifier.width(316.dp).fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                Column(Modifier.width(if (LocalWindowWide.current) 316.dp else 260.dp).fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(11.dp)) {
                     NCard(radius = 13.dp, padding = PaddingValues(13.dp)) {
                         Kicker("Nearby", accent = false, size = 10); VSpace(9.dp)
                         if (peers.isEmpty()) Muted("No devices yet. Open DropNest on another device on this Wi-Fi, or add it by IP.", 11)
@@ -114,6 +116,7 @@ fun DevicesScreen(wide: Boolean, motion: Boolean, onOpenPeer: (Peer) -> Unit, on
                         accessSeg(true)
                     }
                     if (hotspot.supported) HotspotCard(hotspot, viewModel::toggleHotspot)
+                    if (viewModel.bluetoothSupported) BluetoothCard(btActive, settings.bluetooth, viewModel::toggleBluetooth)
                     Spacer(Modifier.weight(1f))
                     Well(radius = 12.dp) {
                         Row(Modifier.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -157,6 +160,7 @@ fun DevicesScreen(wide: Boolean, motion: Boolean, onOpenPeer: (Peer) -> Unit, on
                         }
                     }
                     if (hotspot.supported) item { VSpace(4.dp); HotspotCard(hotspot, viewModel::toggleHotspot) }
+                    if (viewModel.bluetoothSupported) item { VSpace(4.dp); BluetoothCard(btActive, settings.bluetooth, viewModel::toggleBluetooth) }
                 }
             }
         }
@@ -173,10 +177,31 @@ private fun PeerRow(peer: Peer, compact: Boolean, modifier: Modifier = Modifier,
             HSpace(10.dp)
             Column(Modifier.weight(1f)) {
                 Text(peer.info.alias, color = t.text, fontSize = if (compact) 12.5.sp else 13.sp, fontWeight = FontWeight.Medium, lineHeight = 16.sp, maxLines = 1)
-                Text(if (peer.trusted) "Trusted · ${peer.address}" else "${peer.address} · tap to open", color = if (peer.trusted) t.accent else t.muted, fontSize = 10.5.sp, lineHeight = 13.sp, maxLines = 1)
+                val route = if (peer.viaBluetooth) "Bluetooth" else peer.address
+                Text(if (peer.trusted) "Trusted · $route" else "$route · tap to open", color = if (peer.trusted) t.accent else t.muted, fontSize = 10.5.sp, lineHeight = 13.sp, maxLines = 1)
             }
             Icon(Ph.CaretRight, null, tint = t.muted, modifier = Modifier.size(15.dp))
         }
+    }
+}
+
+@Composable
+private fun BluetoothCard(active: Boolean, wanted: Boolean, onToggle: () -> Unit) {
+    val t = N
+    NCard(Modifier.fillMaxWidth(), radius = 13.dp, padding = PaddingValues(13.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Ph.Bluetooth, null, tint = t.accent, modifier = Modifier.size(16.dp)); HSpace(8.dp)
+            Text("Bluetooth fallback", color = t.text, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            NSwitch(wanted, { onToggle() })
+        }
+        VSpace(6.dp)
+        Muted(
+            when {
+                active -> "On. Used only for devices that aren't on your Wi-Fi - slower, but works with no network at all. Pair the devices in Bluetooth settings first."
+                wanted -> "Waiting for Bluetooth to be switched on…"
+                else -> "Reach paired devices when there is no Wi-Fi or hotspot. Wi-Fi stays the primary route."
+            }, 11,
+        )
     }
 }
 

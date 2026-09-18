@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -150,7 +151,7 @@ private fun DesktopBox(
                     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(7.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         itemsIndexed(state.items, key = { _, it -> it.id }) { i, item ->
                             ItemRow(
-                                name = displayName(item), meta = itemMeta(item.kind, item.size), kind = item.kind, mimeType = item.mimeType,
+                                name = displayName(item), meta = itemMeta(item.kind, item.size) + (item.forPeerAlias?.let { " · only for $it" } ?: ""), kind = item.kind, mimeType = item.mimeType,
                                 previewModel = item.source?.let(platform::previewModel), unavailable = !item.available, lift = true,
                                 onClick = { open(item) }, modifier = Modifier.rise(i, item.id),
                             ) {
@@ -171,7 +172,10 @@ private fun PhoneBox(
 ) {
     val t = N
     val platform = koinInject<PlatformServices>()
-    Box(root) {
+    BoxWithConstraints(root) {
+        // Short screens (landscape phones, split view) give the nest less room so the list stays usable.
+        val short = maxHeight < 560.dp
+        val nestHeight = (maxHeight * 0.34f).coerceIn(120.dp, 232.dp)
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.padding(start = 18.dp, end = 18.dp, top = 8.dp), verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f)) {
@@ -183,8 +187,8 @@ private fun PhoneBox(
                 }
                 NIconButton(Ph.Gear, onOpenSettings, size = 44.dp, iconSize = 18.dp, contentDescription = "Settings")
             }
-            Box(Modifier.fillMaxWidth().height(232.dp)) {
-                NestHero(chips, spin, Modifier.fillMaxSize(), scale = 0.92f, motion = motion)
+            Box(Modifier.fillMaxWidth().height(nestHeight)) {
+                NestHero(chips, spin, Modifier.fillMaxSize(), scale = if (short) 0.8f else 0.92f, motion = motion)
                 Row(Modifier.align(Alignment.BottomCenter).padding(horizontal = 18.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                     Gauge(gaugeFraction(state), Modifier.weight(1f))
                     HSpace(8.dp)
@@ -211,7 +215,7 @@ private fun PhoneBox(
                         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             itemsIndexed(state.items, key = { _, it -> it.id }) { i, item ->
                                 ItemRow(
-                                    name = displayName(item), meta = itemMeta(item.kind, item.size), kind = item.kind, mimeType = item.mimeType,
+                                    name = displayName(item), meta = itemMeta(item.kind, item.size) + (item.forPeerAlias?.let { " · only for $it" } ?: ""), kind = item.kind, mimeType = item.mimeType,
                                     previewModel = item.source?.let(platform::previewModel), unavailable = !item.available, card = true, tileSize = 38.dp,
                                     onClick = { open(item) }, modifier = Modifier.rise(i, item.id),
                                 ) {

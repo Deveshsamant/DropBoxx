@@ -4,6 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -22,6 +27,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +55,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.dropnest.domain.BoxRepository
+import com.dropnest.domain.ChatService
 import com.dropnest.domain.DiscoveryService
 import com.dropnest.domain.LocalServer
 import com.dropnest.domain.PlatformServices
@@ -58,6 +66,8 @@ import com.dropnest.ui.AppEvent
 import com.dropnest.ui.AppViewModel
 import com.dropnest.ui.FileOpenerHost
 import com.dropnest.ui.box.BoxScreen
+import com.dropnest.ui.chat.ChatScreen
+import com.dropnest.ui.chat.ChatsScreen
 import com.dropnest.ui.components.AccentTile
 import com.dropnest.ui.components.HSpace
 import com.dropnest.ui.components.Kicker
@@ -88,9 +98,13 @@ import org.koin.compose.viewmodel.koinViewModel
 
 private data class Tab(val route: Route, val label: String, val icon: ImageVector)
 
+/** True on desktop windows wider than 1100 dp: side columns take their comfortable width. */
+val LocalWindowWide = compositionLocalOf { true }
+
 private val tabs = listOf(
     Tab(Route.Box, "My box", Ph.Cube),
     Tab(Route.Devices, "Devices", Ph.Wifi),
+    Tab(Route.Chats, "Chats", Ph.ChatCircle),
     Tab(Route.Transfers, "Transfers", Ph.Clock),
     Tab(Route.Settings, "Settings", Ph.Gear),
 )
@@ -115,6 +129,7 @@ fun App(topBar: (@Composable () -> Unit)? = null, appViewModel: AppViewModel = k
                 topBar?.invoke()
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth >= 840.dp
+                CompositionLocalProvider(LocalWindowWide provides (maxWidth >= 1100.dp)) {
                 if (!onboarded) {
                     val server by appViewModel.serverState.collectAsStateWithLifecycle()
                     val me by appViewModel.me.collectAsStateWithLifecycle()
@@ -126,6 +141,7 @@ fun App(topBar: (@Composable () -> Unit)? = null, appViewModel: AppViewModel = k
                     )
                 } else {
                     AppScaffold(wide, motion, appViewModel)
+                }
                 }
                 }
             }
@@ -148,6 +164,10 @@ private fun AppScaffold(wide: Boolean, motion: Boolean, appViewModel: AppViewMod
     val showToast: (String) -> Unit = { toast = it; toastSeq++ }
     LaunchedEffect(toastSeq) { if (toast != null) { delay(2200); toast = null } }
 
+    val chat = koinInject<ChatService>()
+    LaunchedEffect(chat) {
+        chat.incoming.collect { m -> if (chat.activeThread.value != m.peerId) showToast("Message from ${chat.conversations.value.firstOrNull { it.peer.id == m.peerId }?.peer?.alias ?: "a device"}: ${m.text.take(60)}") }
+    }
     LaunchedEffect(appViewModel) {
         appViewModel.events.collect { event ->
             when (event) {
@@ -170,7 +190,7 @@ private fun AppScaffold(wide: Boolean, motion: Boolean, appViewModel: AppViewMod
     }
     fun selected(tab: Tab): Boolean {
         val dest = backStack?.destination ?: return false
-        return dest.hasRoute(tab.route::class) || (tab.route == Route.Devices && dest.hasRoute(Route.PeerBox::class))
+        return dest.hasRoute(tab.route::class) || (tab.route == Route.Devices && dest.hasRoute(Route.PeerBox::class)) || (tab.route == Route.Chats && dest.hasRoute(Route.Chat::class))
     }
 
     val content: @Composable (Modifier) -> Unit = { modifier ->
@@ -181,6 +201,10 @@ private fun AppScaffold(wide: Boolean, motion: Boolean, appViewModel: AppViewMod
             composable<Route.Box> { BoxScreen(wide, motion, opener, onMessage = showToast, onOpenSettings = { navigateTab(Route.Settings) }) }
             composable<Route.Devices> { DevicesScreen(wide, motion, onOpenPeer = { navController.navigate(Route.PeerBox(it.id)) }, onMessage = showToast) }
             composable<Route.PeerBox> { entry -> PeerBoxScreen(entry.toRoute<Route.PeerBox>().peerId, wide, onBack = { navController.popBackStack() }, onMessage = showToast) }
+            composable<Route.Chats> {
+                ChatsScreen(wide, motion, opener, onOpenChat = { navController.navigate(Route.Chat(it)) }, onOpenPeerBox = { navController.navigate(Route.PeerBox(it.id)) }, onMessage = showToast)
+            }
+            composable<Route.Chat> { entry -> ChatScreen(entry.toRoute<Route.Chat>().peerId, wide, opener = opener, onBack = { navController.popBackStack() }, onMessage = showToast) }
             composable<Route.Transfers> { TransfersScreen(wide, motion, opener) }
             composable<Route.Settings> { SettingsScreen(wide, onReplayTour = {}) }
         }
@@ -193,12 +217,16 @@ private fun AppScaffold(wide: Boolean, motion: Boolean, appViewModel: AppViewMod
                 content(Modifier.fillMaxSize())
             }
         } else {
-            Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            // The keyboard pushes the whole column up and the tab bar steps aside, so an input
+            // sits directly on the keyboard instead of a tab-bar-high gap above it.
+            @OptIn(ExperimentalLayoutApi::class)
+            val imeVisible = WindowInsets.isImeVisible
+            Column(Modifier.fillMaxSize().statusBarsPadding().imePadding()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     content(Modifier.fillMaxSize())
                     NocturneToast(toast, Modifier.align(Alignment.BottomCenter))
                 }
-                PhoneNav(::selected, ::navigateTab)
+                if (!imeVisible) PhoneNav(::selected, ::navigateTab)
             }
         }
         incoming?.let { IncomingRequestDialog(it, wide, motion) { accept, trust -> appViewModel.respond(it, accept, trust) } }
@@ -218,7 +246,8 @@ private fun Sidebar(appViewModel: AppViewModel, selected: (Tab) -> Boolean, navi
     val peers by koinInject<DiscoveryService>().peers.collectAsStateWithLifecycle()
     val sessions by koinInject<TransferEngine>().sessions.collectAsStateWithLifecycle()
     val live = sessions.count { !it.status.isTerminal }
-    Column(Modifier.width(212.dp).fillMaxHeight().background(t.bg2).padding(11.dp, 15.dp)) {
+    val unread = koinInject<ChatService>().conversations.collectAsStateWithLifecycle().value.sumOf { it.unread }
+    Column(Modifier.width(if (LocalWindowWide.current) 212.dp else 188.dp).fillMaxHeight().background(t.bg2).padding(11.dp, 15.dp)) {
         Box(Modifier.fillMaxWidth().padding(7.dp, 0.dp, 7.dp, 11.dp)) { Kicker("This device", accent = false, size = 10) }
         NCard(Modifier.fillMaxWidth(), radius = 10.dp, padding = PaddingValues(9.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -244,6 +273,7 @@ private fun Sidebar(appViewModel: AppViewModel, selected: (Tab) -> Boolean, navi
                     Spacer(Modifier.weight(1f))
                     if (count > 0) Muted("$count", 10)
                     if (tab.route == Route.Transfers && live > 0) Text("$live", color = t.accent, fontSize = 10.sp, modifier = Modifier.clip(CircleShape).background(t.accentSoft).padding(6.dp, 1.dp))
+                    if (tab.route == Route.Chats && unread > 0) Text("$unread", color = t.bg, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(CircleShape).background(t.accent).padding(6.dp, 1.dp))
                 },
             )
         }
@@ -269,6 +299,7 @@ private fun Sidebar(appViewModel: AppViewModel, selected: (Tab) -> Boolean, navi
 private fun PhoneNav(selected: (Tab) -> Boolean, navigate: (Route) -> Unit) {
     val t = N
     val live = koinInject<TransferEngine>().sessions.collectAsStateWithLifecycle().value.count { !it.status.isTerminal }
+    val unread = koinInject<ChatService>().conversations.collectAsStateWithLifecycle().value.sumOf { it.unread }
     Row(Modifier.fillMaxWidth().background(t.bg2).navigationBarsPadding().padding(10.dp, 7.dp, 10.dp, 10.dp)) {
         tabs.forEach { tab ->
             val on = selected(tab)
@@ -282,6 +313,7 @@ private fun PhoneNav(selected: (Tab) -> Boolean, navigate: (Route) -> Unit) {
                 Box {
                     Icon(tab.icon, tab.label, tint = if (on) t.accent else t.text, modifier = Modifier.height(21.dp).width(21.dp))
                     if (tab.route == Route.Transfers && live > 0) Box(Modifier.align(Alignment.TopEnd).width(7.dp).height(7.dp).clip(CircleShape).background(t.accent))
+                    if (tab.route == Route.Chats && unread > 0) Text("$unread", color = t.bg, fontSize = 9.sp, fontWeight = FontWeight.Bold, lineHeight = 10.sp, modifier = Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-4).dp).clip(CircleShape).background(t.accent).padding(4.dp, 1.dp))
                 }
                 VSpace(3.dp)
                 Text(tab.label, color = if (on) t.accent else t.text, fontSize = 10.5.sp, lineHeight = 12.sp)

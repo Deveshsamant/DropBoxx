@@ -34,6 +34,8 @@ data class PeerBoxUiState(
     val peer: Peer? = null,
     val status: PeerBoxStatus = PeerBoxStatus.Loading,
     val selected: Set<String> = emptySet(),
+    /** A refresh is in flight; the current list stays on screen meanwhile. */
+    val refreshing: Boolean = false,
 )
 
 /** One peer's box: list what they dropped, pick items, fetch them. */
@@ -46,16 +48,46 @@ class PeerBoxViewModel(
 
     private val status = MutableStateFlow<PeerBoxStatus>(PeerBoxStatus.Loading)
     private val selected = MutableStateFlow<Set<String>>(emptySet())
+    private val refreshing = MutableStateFlow(false)
     private val peer: StateFlow<Peer?> = discovery.peers.map { list -> list.firstOrNull { it.id == peerId } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, discovery.peers.value.firstOrNull { it.id == peerId })
 
-    val state: StateFlow<PeerBoxUiState> = combine(peer, status, selected) { p, s, sel -> PeerBoxUiState(p, s, sel) }
+    val state: StateFlow<PeerBoxUiState> = combine(peer, status, selected, refreshing) { p, s, sel, r -> PeerBoxUiState(p, s, sel, r) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeerBoxUiState(peer.value))
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val messages: SharedFlow<String> get() = _messages
 
     init { load() }
+
+    /** Called by the screen while it is visible: items the owner drops meanwhile show up by themselves. */
+    fun autoRefresh() { if (status.value is PeerBoxStatus.Ready && !refreshing.value) refresh(silent = true) }
+
+    /** Re-lists the box without dropping the current list; keeps the selection for items that still exist. */
+    fun refresh(silent: Boolean = false) {
+        val p = peer.value ?: return
+        val ready = status.value as? PeerBoxStatus.Ready ?: run { load(); return }
+        if (refreshing.value) return
+        refreshing.value = true
+        viewModelScope.launch {
+            try {
+                when (val r = engine.browse(p, null, ready.accessToken)) {
+                    is BrowseOutcome.Ok -> {
+                        val items = r.items.sortedByDescending { it.addedAt }
+                        status.value = PeerBoxStatus.Ready(items, r.accessToken)
+                        val ids = items.map { it.id }.toSet()
+                        selected.update { it.filter { id -> id in ids }.toSet() }
+                        val added = items.size - ready.items.size
+                        if (!silent) _messages.tryEmit(if (added > 0) "$added new item${if (added == 1) "" else "s"}" else "Up to date")
+                    }
+                    BrowseOutcome.Busy -> if (!silent) _messages.tryEmit("${p.info.alias} is busy, try again")
+                    is BrowseOutcome.Failed -> if (!silent) _messages.tryEmit(r.message)
+                    // Access changed on the other side (revoked, PIN added): fall back to the full flow.
+                    else -> load()
+                }
+            } finally { refreshing.value = false }
+        }
+    }
 
     fun load(pin: String? = null) {
         val p = peer.value ?: run { status.value = PeerBoxStatus.Failed("Device is no longer nearby"); return }
@@ -96,4 +128,5 @@ class PeerBoxViewModel(
     }
 
     fun openUrl(url: String) = platform.openUrl(url)
+
 }

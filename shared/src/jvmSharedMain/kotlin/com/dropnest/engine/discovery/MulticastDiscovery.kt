@@ -15,6 +15,7 @@ import com.dropnest.model.Api
 import com.dropnest.model.DeviceInfo
 import com.dropnest.model.MulticastMessage
 import com.dropnest.model.Peer
+import com.dropnest.model.Transport
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -119,7 +120,15 @@ class MulticastDiscovery(
 
     override fun upsert(peer: Peer) {
         if (peer.id == me.id) return
-        _peers.value = _peers.value + (peer.id to peer)
+        val existing = _peers.value[peer.id]
+        val merged = when {
+            existing == null -> peer
+            // A fresh Wi-Fi route always beats Bluetooth; just remember the MAC for later.
+            peer.transport == Transport.BLUETOOTH && existing.transport == Transport.WIFI && existing.lastSeenMillis >= nowMillis() - AppInfo.PEER_TTL_MILLIS ->
+                existing.copy(bluetoothAddress = peer.address, lastSeenMillis = nowMillis(), info = peer.info)
+            else -> peer.copy(bluetoothAddress = peer.bluetoothAddress ?: existing.bluetoothAddress ?: existing.address.takeIf { existing.transport == Transport.BLUETOOTH })
+        }
+        _peers.value = _peers.value + (peer.id to merged)
     }
 
     private fun openSocket(): MulticastSocket {

@@ -7,6 +7,7 @@ import com.dropnest.domain.BoxRepository
 import com.dropnest.domain.PlatformServices
 import com.dropnest.engine.store.JsonFileStore
 import com.dropnest.model.BoxItem
+import com.dropnest.model.DeviceInfo
 import com.dropnest.model.ItemKind
 import com.dropnest.model.OutgoingItem
 import com.dropnest.model.PlatformFile
@@ -27,7 +28,7 @@ class BoxRepositoryImpl(dataDirectory: String, private val platform: PlatformSer
     private val _items = MutableStateFlow(store.load().items)
     override val items: StateFlow<List<BoxItem>> get() = _items
 
-    override suspend fun add(items: List<OutgoingItem>): List<String> = withContext(Dispatchers.IO) {
+    override suspend fun add(items: List<OutgoingItem>, forPeer: DeviceInfo?): List<String> = withContext(Dispatchers.IO) {
         val skipped = mutableListOf<String>()
         val added = mutableListOf<BoxItem>()
         for (item in items) {
@@ -44,7 +45,8 @@ class BoxRepositoryImpl(dataDirectory: String, private val platform: PlatformSer
                 }
             }
         }
-        if (added.isNotEmpty()) commit(_items.value + added)
+        val scoped = if (forPeer == null) added else added.map { it.copy(forPeerId = forPeer.id, forPeerAlias = forPeer.alias) }
+        if (scoped.isNotEmpty()) commit(_items.value + scoped)
         skipped
     }
 

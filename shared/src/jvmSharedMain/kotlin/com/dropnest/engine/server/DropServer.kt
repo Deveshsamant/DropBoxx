@@ -10,6 +10,9 @@ import com.dropnest.engine.identity.IdentityManager
 import com.dropnest.engine.net.NetworkUtils
 import com.dropnest.engine.net.ProtocolJson
 import com.dropnest.engine.box.BoxAccessController
+import com.dropnest.engine.chat.ChatReceiveResult
+import com.dropnest.engine.chat.ChatServiceImpl
+import com.dropnest.model.ChatEnvelope
 import com.dropnest.engine.box.ListResult
 import com.dropnest.engine.transfer.PrepareResult
 import com.dropnest.engine.transfer.ReceiveController
@@ -59,6 +62,7 @@ class DropServer(
     private val discovery: DiscoveryService,
     private val receive: ReceiveController,
     private val boxAccess: BoxAccessController,
+    private val chat: ChatServiceImpl,
     private val scope: CoroutineScope,
 ) : LocalServer {
 
@@ -198,11 +202,25 @@ class DropServer(
                 }
             }
 
+            post(Api.CHAT) {
+                val env = call.receive<ChatEnvelope>()
+                val remote = remoteIp(call.request.origin.remoteAddress)
+                discovery.upsert(Peer(env.from, remote, nowMillis()))
+                when (val r = chat.receive(env, remote)) {
+                    is ChatReceiveResult.Ok -> call.respond(r.ack)
+                    ChatReceiveResult.PinRequired -> call.respond(HttpStatusCode.Unauthorized, ErrorResponse("pin required"))
+                    ChatReceiveResult.Denied -> call.respond(HttpStatusCode.Forbidden, ErrorResponse("denied"))
+                    ChatReceiveResult.Busy -> call.respond(HttpStatusCode.Conflict, ErrorResponse("busy"))
+                }
+            }
+
             get("${Api.BOX_ITEM}/{id}") {
-                if (!boxAccess.authorize(call.request.queryParameters["token"])) {
+                val deviceId = boxAccess.authorize(call.request.queryParameters["token"])
+                val itemId = call.parameters["id"]
+                if (deviceId == null || itemId == null || !boxAccess.mayDownload(itemId, deviceId)) {
                     call.respond(HttpStatusCode.Forbidden, ErrorResponse("not allowed")); return@get
                 }
-                val file = call.parameters["id"]?.let { boxAccess.openItem(it) }
+                val file = boxAccess.openItem(itemId)
                 if (file == null) { call.respond(HttpStatusCode.NotFound, ErrorResponse("no such item")); return@get }
                 val total = file.size
                 val start = call.request.headers[HttpHeaders.Range]?.removePrefix("bytes=")?.substringBefore('-')?.toLongOrNull()?.coerceIn(0L, total) ?: 0L

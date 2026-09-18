@@ -58,6 +58,7 @@ object Api {
     const val UPLOAD_STATUS = "/api/v1/upload-status"
     const val CANCEL = "/api/v1/cancel"
     const val BOX_LIST = "/api/v1/box/list"
+    const val CHAT = "/api/v1/chat"
     /** GET {BOX_ITEM}/{itemId}?token=... with optional Range header. */
     const val BOX_ITEM = "/api/v1/box/item"
 

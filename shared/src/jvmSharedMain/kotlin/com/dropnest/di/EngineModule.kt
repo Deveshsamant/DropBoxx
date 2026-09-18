@@ -1,7 +1,12 @@
 package com.dropnest.di
 
 import com.dropnest.domain.AppSettings
+import com.dropnest.domain.BluetoothControl
 import com.dropnest.domain.BoxRepository
+import com.dropnest.domain.ChatService
+import com.dropnest.engine.bt.BluetoothPeerService
+import com.dropnest.engine.bt.BluetoothTransport
+import com.dropnest.engine.chat.ChatServiceImpl
 import com.dropnest.domain.DeviceIdentity
 import com.dropnest.domain.DiscoveryService
 import com.dropnest.domain.HistoryStore
@@ -46,5 +51,13 @@ val engineModule: Module = module {
     single { BoxAccessController(get(), get(), get(), get(), get()) }
     single { BoxClient(get(), get(), get(), get(), get(), get(), get<ReceiveController>().receivedContent) }
     single<TransferEngine> { TransferEngineImpl(get(), get(), get(), get(), get()) }
-    single<LocalServer> { DropServer(get(), get(), get(), get(), get(), get()) }
+    single { ChatServiceImpl(get<PlatformServices>().dataDirectory, get(), get(), get(), get(), get(), get(), get()) } bind ChatService::class
+    single {
+        BluetoothPeerService(getOrNull<BluetoothTransport>(), get(), get(), get(), get(), get(), get()).also { bt ->
+            bt.chat = get<ChatServiceImpl>()
+            get<ChatServiceImpl>().bluetooth = bt
+            get<BoxClient>().bluetooth = bt
+        }
+    } bind BluetoothControl::class
+    single<LocalServer> { DropServer(get(), get(), get(), get(), get(), get(), get()) }
 }

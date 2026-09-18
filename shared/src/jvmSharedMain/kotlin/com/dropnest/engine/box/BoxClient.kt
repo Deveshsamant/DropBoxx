@@ -61,12 +61,16 @@ class BoxClient(
     private val log = Logger.withTag("BoxClient")
     private val jobs = ConcurrentHashMap<String, Job>()
 
-    suspend fun browse(peer: Peer, pin: String?): BrowseOutcome {
+    /** Set by the engine module; null when the platform has no Bluetooth. */
+    var bluetooth: com.dropnest.engine.bt.BluetoothPeerService? = null
+
+    suspend fun browse(peer: Peer, pin: String?, visitToken: String? = null): BrowseOutcome {
+        if (peer.viaBluetooth) return bluetooth?.browse(peer, pin, visitToken) ?: BrowseOutcome.Failed("Bluetooth is not available on this device")
         val client = clients.forFingerprint(peer.info.fingerprint)
         val response = try {
             client.post("${peer.baseUrl}${Api.BOX_LIST}") {
                 contentType(ContentType.Application.Json)
-                setBody(BoxListRequest(identity.info.value, trustStore.outgoingToken(peer.id), pin))
+                setBody(BoxListRequest(identity.info.value, trustStore.outgoingToken(peer.id), pin, visitToken))
             }
         } catch (e: CancellationException) {
             throw e
@@ -106,6 +110,26 @@ class BoxClient(
         return sessionId
     }
 
+    /** Same contract as the HTTPS path, over one RFCOMM connection per attempt (resumes by offset). */
+    private suspend fun fetchOverBluetooth(sessionId: String, peer: Peer, entry: BoxEntry, token: String, target: com.dropnest.domain.ReceiveTarget): String? {
+        val bt = bluetooth ?: return null
+        repeat(MAX_ATTEMPTS) { attempt ->
+            val offset = target.bytesWritten
+            registry.updateItem(sessionId, entry.id) { it.copy(status = ItemStatus.ACTIVE, error = null) }
+            registry.setBytes(sessionId, entry.id, offset)
+            val got = try {
+                target.sink().buffer().use { sink ->
+                    val n = bt.fetch(peer, entry, token, offset) { buf, len -> sink.write(buf, 0, len); registry.addBytes(sessionId, entry.id, len.toLong()) }
+                    sink.flush(); n
+                }
+            } catch (e: CancellationException) { throw e } catch (e: Exception) { log.w { "bt fetch ${entry.name}: ${e.message}" }; 0L }
+            if (got < 0) return null
+            if (target.bytesWritten >= entry.size) return target.complete()
+            delay(1_500L * (attempt + 1))
+        }
+        return null
+    }
+
     fun cancel(sessionId: String): Boolean {
         val job = jobs.remove(sessionId) ?: return false
         job.cancel()
@@ -143,6 +167,7 @@ class BoxClient(
     private suspend fun fetchWithRetry(sessionId: String, peer: Peer, client: io.ktor.client.HttpClient, entry: BoxEntry, token: String): String? {
         val target = runCatching { platform.receiveStorage.open(entry.name, entry.mimeType, entry.size) }
             .getOrElse { log.w { "cannot create ${entry.name}: ${it.message}" }; return null }
+        if (peer.viaBluetooth) return fetchOverBluetooth(sessionId, peer, entry, token, target)
         repeat(MAX_ATTEMPTS) { attempt ->
             val offset = target.bytesWritten
             registry.updateItem(sessionId, entry.id) { it.copy(status = ItemStatus.ACTIVE, error = null) }

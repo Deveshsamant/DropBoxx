@@ -127,7 +127,10 @@ private fun OrbitCard(peer: Peer, onClick: () -> Unit) {
             AccentTile(peer.info.deviceType.phIcon(), size = 30.dp, iconSize = 16.dp, radius = 8.dp, muted = !peer.trusted)
             Column(Modifier.padding(start = 8.dp)) {
                 Text(peer.info.alias, color = t.text, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 14.sp)
-                Text(if (peer.trusted) "trusted" else peer.address, color = if (peer.trusted) t.accent else t.muted, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    (if (peer.trusted) "trusted" else peer.address) + if (peer.viaBluetooth) " · Bluetooth" else "",
+                    color = if (peer.trusted) t.accent else t.muted, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

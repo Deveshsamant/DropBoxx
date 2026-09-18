@@ -1,5 +1,6 @@
 package com.dropnest.desktop
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,6 +87,7 @@ fun main(args: Array<String>) {
             state = windowState,
             decoration = WindowDecoration.Undecorated(resizerThickness = 6.dp),
         ) {
+            LaunchedEffect(Unit) { window.minimumSize = java.awt.Dimension(640, 480) }
             App(topBar = { NocturneTitleBar(windowState, logo, close) })
         }
     }
