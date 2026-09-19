@@ -37,12 +37,21 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import kotlin.system.exitProcess
 
+private const val SINGLE_INSTANCE_PORT = 47899
+private val showRequests = java.util.concurrent.atomic.AtomicInteger(0)
+
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 fun main(args: Array<String>) {
     System.setProperty("sun.java2d.uiScale.enabled", "true")
-    val singleInstance = runCatching { ServerSocket(47899, 1, InetAddress.getLoopbackAddress()) }.getOrNull()
+    // One process per user: a second launch (double-clicking the exe while we sit in the tray,
+    // "Open with", "Send to") hands its arguments to the running instance and asks it to show.
+    val singleInstance = runCatching { ServerSocket(SINGLE_INSTANCE_PORT, 4, InetAddress.getLoopbackAddress()) }.getOrNull()
     if (singleInstance == null) {
-        Logger.w { "DropNest is already running" }
+        runCatching {
+            java.net.Socket(InetAddress.getLoopbackAddress(), SINGLE_INSTANCE_PORT).use { s ->
+                s.getOutputStream().bufferedWriter().apply { write("SHOW\n"); args.forEach { write(it + "\n") }; flush() }
+            }
+        }.onFailure { Logger.w { "DropNest is already running but did not answer: ${it.message}" } }
         exitProcess(0)
     }
 
@@ -53,7 +62,21 @@ fun main(args: Array<String>) {
     val inbox = koin.get<ShareInbox>()
 
     // Files passed on the command line ("Open with", "Send to" shortcut) land in the staging area.
-    inbox.offer(expandFiles(args.map(::File).filter { it.exists() }).map { OutgoingItem.File(randomId(8), it) })
+    fun offerFiles(paths: List<String>) = inbox.offer(expandFiles(paths.map(::File).filter { it.exists() }).map { OutgoingItem.File(randomId(8), it) })
+    offerFiles(args.toList())
+
+    // Requests from later launches: show the window, import their files.
+    Thread({
+        while (true) {
+            val client = runCatching { singleInstance.accept() }.getOrNull() ?: break
+            runCatching {
+                client.use { c ->
+                    val lines = c.getInputStream().bufferedReader().readLines()
+                    if (lines.firstOrNull() == "SHOW") { showRequests.incrementAndGet(); offerFiles(lines.drop(1)) }
+                }
+            }
+        }
+    }, "dropnest-single-instance").apply { isDaemon = true; start() }
 
     server.start()
     Runtime.getRuntime().addShutdownHook(Thread { runCatching { server.stop() } })
@@ -61,6 +84,16 @@ fun main(args: Array<String>) {
     application {
         val trayState = rememberTrayState()
         var visible by remember { mutableStateOf(true) }
+        var showSignal by remember { mutableStateOf(0) }
+        // Poll the show counter cheaply (it changes only when another launch knocks).
+        LaunchedEffect(Unit) {
+            var seen = showRequests.get()
+            while (true) {
+                kotlinx.coroutines.delay(300)
+                val now = showRequests.get()
+                if (now != seen) { seen = now; visible = true; showSignal++ }
+            }
+        }
         val logo = remember { BitmapPainter(useResource("icons/logo.png", ::loadImageBitmap)) }
 
         platform.notificationSink = { title, body -> trayState.sendNotification(Notification(title, body, Notification.Type.Info)) }
@@ -88,6 +121,7 @@ fun main(args: Array<String>) {
             decoration = WindowDecoration.Undecorated(resizerThickness = 6.dp),
         ) {
             LaunchedEffect(Unit) { window.minimumSize = java.awt.Dimension(640, 480) }
+            LaunchedEffect(showSignal) { if (showSignal > 0) { windowState.isMinimized = false; window.toFront(); window.requestFocus() } }
             App(topBar = { NocturneTitleBar(windowState, logo, close) })
         }
     }

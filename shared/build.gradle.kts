@@ -50,7 +50,6 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
-            implementation(libs.compose.material.icons.core)
 
             implementation(libs.navigation.compose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
@@ -96,7 +95,6 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.jna)
-            implementation(libs.jna.platform)
         }
     }
 }

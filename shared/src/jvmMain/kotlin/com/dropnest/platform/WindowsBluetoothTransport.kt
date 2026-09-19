@@ -8,8 +8,6 @@ import com.sun.jna.Library
 import com.sun.jna.Memory
 import com.sun.jna.Native
 import com.sun.jna.Pointer
-import com.sun.jna.platform.win32.WinNT
-import com.sun.jna.ptr.IntByReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,9 +40,9 @@ class WindowsBluetoothTransport : BluetoothTransport {
 
     @Suppress("FunctionName")
     private interface Bth : Library {
-        fun BluetoothFindFirstDevice(params: Pointer, info: Pointer): WinNT.HANDLE?
-        fun BluetoothFindNextDevice(find: WinNT.HANDLE, info: Pointer): Boolean
-        fun BluetoothFindDeviceClose(find: WinNT.HANDLE): Boolean
+        fun BluetoothFindFirstDevice(params: Pointer, info: Pointer): Pointer?
+        fun BluetoothFindNextDevice(find: Pointer, info: Pointer): Boolean
+        fun BluetoothFindDeviceClose(find: Pointer): Boolean
         fun BluetoothIsConnectable(radio: Pointer?): Boolean
     }
 

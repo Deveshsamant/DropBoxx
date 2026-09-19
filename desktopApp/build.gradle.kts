@@ -8,7 +8,10 @@ plugins {
 
 dependencies {
     implementation(projects.shared)
-    implementation(compose.desktop.currentOs)
+    implementation(compose.desktop.currentOs) {
+        // The UI is Material 3 only; Material 2 comes along with the desktop bundle otherwise.
+        exclude(group = "org.jetbrains.compose.material", module = "material")
+    }
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.koin.core)
     implementation(libs.kermit)
@@ -28,14 +31,18 @@ compose.desktop {
     application {
         mainClass = "com.dropnest.desktop.MainKt"
 
-        // Latency-oriented JVM flags: small heap, quick warm-up.
+        // Small heap, full tiered JIT (C1 alone made the 60 fps nest/orbit stutter on laptops),
+        // and a parallel GC that keeps pauses short at this heap size.
         jvmArgs += listOf(
-            "-Xms64m",
+            "-Xms96m",
             "-Xmx512m",
-            "-XX:+UseSerialGC",
-            "-XX:TieredStopAtLevel=1",
+            "-XX:+UseParallelGC",
+            "-XX:MaxGCPauseMillis=20",
+            "-Xss1m",
+            "-XX:+UseCompressedOops",
             "-Dfile.encoding=UTF-8",
             "-Dsun.java2d.uiScale.enabled=true",
+            "-Dskiko.vsync.enabled=true",
         )
 
         nativeDistributions {

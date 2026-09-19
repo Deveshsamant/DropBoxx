@@ -18,6 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -97,21 +100,25 @@ fun OrbitField(
             Text(meName, color = t.text, fontSize = 11.5.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 7.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Muted("this device", 10)
         }
-        // Peers, back to front.
+        // Peers, back to front. Positions are read inside offset/graphicsLayer lambdas so the
+        // 60 fps spin only re-lays-out and redraws; recomposition happens just when the draw
+        // order changes (a card passing behind another).
         val n = peers.size.coerceAtLeast(1)
-        val placed = peers.mapIndexed { i, peer ->
-            val a = ((i.toFloat() / n) * 360f + spin.degrees) * PI.toFloat() / 180f
-            val z = cos(a)                     // 1 = front, -1 = back
-            Triple(peer, sin(a) * R, z)
-        }.sortedBy { it.third }
-        placed.forEach { (peer, x, z) ->
-            val scale = 0.86f + 0.14f * (z + 1) / 2
-            val alpha = 0.72f + 0.28f * (z + 1) / 2
-            val y = cy + z * R * 0.62f - h / 2
+        fun angleOf(i: Int) = ((i.toFloat() / n) * 360f + spin.degrees) * PI.toFloat() / 180f
+        val order by remember(peers) { derivedStateOf { peers.indices.sortedBy { cos(angleOf(it)) } } }
+        order.forEach { i ->
+            val peer = peers[i]
             Box(
                 Modifier.align(Alignment.Center)
-                    .offset { IntOffset((cx - w / 2 + x).roundToInt(), y.roundToInt()) }
-                    .graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha }
+                    .offset {
+                        val a = angleOf(i)
+                        IntOffset((sin(a) * R).roundToInt(), (cy + cos(a) * R * 0.62f - h / 2).roundToInt())
+                    }
+                    .graphicsLayer {
+                        val z = cos(angleOf(i))
+                        val sc = 0.86f + 0.14f * (z + 1) / 2
+                        scaleX = sc; scaleY = sc; alpha = 0.72f + 0.28f * (z + 1) / 2
+                    }
                     .width(cardWidth.dp),
             ) { OrbitCard(peer) { onOpen(peer) } }
         }

@@ -4,10 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,6 +41,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -219,8 +219,7 @@ private fun AppScaffold(wide: Boolean, motion: Boolean, appViewModel: AppViewMod
         } else {
             // The keyboard pushes the whole column up and the tab bar steps aside, so an input
             // sits directly on the keyboard instead of a tab-bar-high gap above it.
-            @OptIn(ExperimentalLayoutApi::class)
-            val imeVisible = WindowInsets.isImeVisible
+            val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
             Column(Modifier.fillMaxSize().statusBarsPadding().imePadding()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     content(Modifier.fillMaxSize())
